@@ -1,0 +1,24 @@
+{
+  "schema": "klab-scenario-v1",
+  "target": "upstream:v6.6",
+  "arch": "x86_64",
+  "profile": "normal",
+  "userspace": "buildroot:minimal",
+  "timeout_seconds": 30,
+  "modules": [
+    {
+      "id": "intentional_panic",
+      "source_dir": "../panic-module",
+      "name": "klab_intentional_panic",
+      "auto_load": true,
+      "unload_after": false
+    }
+  ],
+  "processes": [],
+  "expected_panic": {
+    "module": "intentional_panic",
+    "pattern": "KLab intentional panic validation",
+    "timeout_seconds": 15
+  },
+  "collect": {"dmesg": true, "events": true}
+}

@@ -1,0 +1,1 @@
+R14 pass 03: provenance v3 + exact compiler match + APT semantic closure; no live repository/QEMU claims.

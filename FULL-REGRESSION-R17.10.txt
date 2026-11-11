@@ -1,0 +1,16 @@
+KLab 0.0.0b r17.10 BSD expansion checkpoint
+Date: 2026-10-07
+Command: bash tests/run-all.sh
+Result: ALL M2 NETWORK-FREE TESTS: PASS
+Shell regression scripts: 107
+BSD v1 gate: PASS
+BSD expansion rows: 4 of 4 PASS
+
+Live expansion proofs:
+- FreeBSD 14.5 i386 USERSPACE_PASS
+- FreeBSD 14.5 riscv64 USERSPACE_PASS under isolated QEMU 10.0.13
+- NetBSD 11.0 aarch64 USERSPACE_PASS
+- DragonFly BSD 6.2.2 x86_64 USERSPACE_PASS
+
+Every live run used checksum-verified official media, disabled guest networking,
+and wrote only to disposable overlays.

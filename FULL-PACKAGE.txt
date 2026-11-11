@@ -1,0 +1,9 @@
+KLab full integrated package R7 — 2026-09-22
+
+Complete runnable source tree; no M2 patch step is required.
+Includes M2 provider/buildenv/toolchain integration, post-overnight hardening,
+rootless Docker ownership handling, historical Ubuntu compatibility fixes,
+distro-ABI/vermagic validation, sandbox-root symlink semantics, and safe
+preservation/validation of ordinary hardlinks in captured distro buildenv roots.
+
+Run KLab as the normal user; do not run kernel-lab.sh/provider prepares with sudo.

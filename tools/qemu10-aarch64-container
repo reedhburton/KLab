@@ -1,0 +1,92 @@
+#!/usr/bin/env bash
+set -euo pipefail
+image="${KLAB_QEMU10_AARCH64_IMAGE:-klab-qemu10-aarch64:local}"
+docker image inspect "$image" >/dev/null 2>&1 || {
+  echo "missing Docker image: $image" >&2
+  exit 127
+}
+
+# KLab launches QEMU with -daemonize and expects -pidfile to contain a PID in
+# the host namespace. A daemonized container process causes Docker to tear
+# the container down immediately, and QEMU's container PID is not useful to
+# the host session manager. Keep QEMU in the foreground inside a detached
+# container, then translate the container to its host-visible PID.
+pidfile=""
+args=()
+while (($#)); do
+  case "$1" in
+    -daemonize)
+      shift
+      ;;
+    -pidfile)
+      (($# >= 2)) || { echo "-pidfile requires a path" >&2; exit 2; }
+      pidfile="$2"
+      shift 2
+      ;;
+    *)
+      args+=("$1")
+      shift
+      ;;
+  esac
+done
+[[ -n "$pidfile" ]] || { echo "KLab QEMU wrapper requires -pidfile" >&2; exit 2; }
+
+docker_network=(--network none)
+docker_remove=(--rm)
+[[ "${KLAB_QEMU_CONTAINER_KEEP:-0}" == 1 ]] && docker_remove=()
+relay_port=""
+relay_container_port=""
+control_socket=""
+for arg in "${args[@]}"; do
+  if [[ "$arg" =~ (^|,)path=([^,]+),server=on ]]; then control_socket="${BASH_REMATCH[2]}"; fi
+done
+for i in "${!args[@]}"; do
+  if [[ "${args[$i]}" =~ hostfwd=tcp:(127\.0\.0\.1|0\.0\.0\.0):([0-9]+)- ]]; then
+    host_bind="${BASH_REMATCH[1]}"; relay_port="${BASH_REMATCH[2]}"
+    if ((relay_port <= 55535)); then relay_container_port=$((relay_port + 10000)); else relay_container_port=$((relay_port - 10000)); fi
+    docker_network=(--network bridge -p "${host_bind}:${relay_port}:${relay_container_port}")
+    break
+  fi
+done
+relay_source="$(cd "$(dirname "$0")" && pwd)/qemu-container-tcp-relay.c"
+relay_binary="/tmp/klab-qemu-container-tcp-relay-${UID}"
+if [[ -n "$relay_port" && ( ! -x "$relay_binary" || "$relay_source" -nt "$relay_binary" ) ]]; then
+  cc -O2 "$relay_source" -o "$relay_binary"
+fi
+
+if [[ -n "$relay_port" ]]; then
+  container_id="$(docker run -d "${docker_remove[@]}" "${docker_network[@]}" \
+    -v /home/reed:/home/reed -v /mnt/klab-store:/mnt/klab-store -v /tmp:/tmp --entrypoint /bin/bash "$image" \
+    -c '"$4" "${@:5}" & qpid=$!; "$1" "$2" 127.0.0.1 "$3" & wait "$qpid"' \
+    bash "$relay_binary" "$relay_container_port" "$relay_port" /usr/bin/qemu-system-aarch64 "${args[@]}")"
+else
+  container_id="$(docker run -d "${docker_remove[@]}" "${docker_network[@]}" \
+    -v /home/reed:/home/reed -v /mnt/klab-store:/mnt/klab-store -v /tmp:/tmp \
+    --entrypoint /usr/bin/qemu-system-aarch64 "$image" "${args[@]}")"
+fi
+printf '%s\n' "$container_id" > "${pidfile}.container"
+for _ in {1..100}; do
+  host_pid="$(docker inspect -f '{{.State.Pid}}' "$container_id" 2>/dev/null || true)"
+  if [[ "$host_pid" =~ ^[1-9][0-9]*$ ]]; then
+    if [[ -n "$control_socket" ]]; then
+      for _ in {1..200}; do
+        [[ -S "$control_socket" ]] && break
+        docker inspect "$container_id" >/dev/null 2>&1 || { echo "QEMU container exited before creating $control_socket" >&2; exit 1; }
+        sleep 0.05
+      done
+      [[ -S "$control_socket" ]] || { docker stop "$container_id" >/dev/null 2>&1 || true; echo "QEMU did not create $control_socket" >&2; exit 1; }
+      # QEMU creates the pathname just before listen(2); avoid racing the relay.
+      sleep 0.5
+    fi
+    printf '%s\n' "$host_pid" > "$pidfile"
+    exit 0
+  fi
+  if ! docker inspect "$container_id" >/dev/null 2>&1; then
+    echo "QEMU container exited during startup" >&2
+    exit 1
+  fi
+  sleep 0.05
+done
+docker stop "$container_id" >/dev/null 2>&1 || true
+echo "timed out resolving QEMU container PID" >&2
+exit 1

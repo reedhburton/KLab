@@ -1,0 +1,34 @@
+{
+  "schema": "klab-multiguest-scenario-v2",
+  "timeout_seconds": 60,
+  "networks": [
+    {"id":"lan-a","cidr":"10.77.10.0/24","capture":true},
+    {"id":"lan-b","cidr":"10.77.20.0/24","capture":true}
+  ],
+  "guests": [
+    {
+      "id":"server","target":"upstream:v6.6","arch":"x86_64",
+      "interfaces":[{"id":"net0","network":"lan-a","ip":"10.77.10.11/24"}],
+      "routes":[{"to":"10.77.20.0/24","via":"10.77.10.1"}],
+      "builds":[{"id":"netpair","source":"../network-pair.c","remote":"/tmp/netpair","static":true}],
+      "processes":[{"id":"server","command":"/tmp/netpair server 24001 1","ready":{"stdout":"SERVER_READY"},"expected_exit":0}]
+    },
+    {
+      "id":"router","target":"upstream:v6.6","arch":"x86_64","forward_ipv4":true,
+      "interfaces":[
+        {"id":"left","network":"lan-a","ip":"10.77.10.1/24"},
+        {"id":"right","network":"lan-b","ip":"10.77.20.1/24"}
+      ]
+    },
+    {
+      "id":"client","target":"upstream:v6.6","arch":"x86_64",
+      "interfaces":[{"id":"net0","network":"lan-b","ip":"10.77.20.11/24"}],
+      "routes":[{"to":"10.77.10.0/24","via":"10.77.20.1"}],
+      "builds":[{"id":"netpair","source":"../network-pair.c","remote":"/tmp/netpair","static":true}],
+      "processes":[{
+        "id":"client","command":"/tmp/netpair client 10.77.10.11 24001 routed-hello","expected_exit":0,
+        "depends_on":[{"guest":"server","process":"server","state":"ready"}]
+      }]
+    }
+  ]
+}

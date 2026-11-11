@@ -1,0 +1,69 @@
+{
+  "schema": "klab-r16-mixed-matrix-v1",
+  "stable": [
+    "x86-arm64-i386.json",
+    "arm64-x86-armv7.json",
+    "armv7-arm64-x86.json",
+    "i386-x86-arm64.json"
+  ],
+  "experimental": [
+    "x86-arm64-mipsel.json",
+    "mipsel-x86-armv7.json",
+    "mips-arm64-x86.json"
+  ],
+  "kernel_variants": {
+    "policy": "representative-cohorts-v1",
+    "stable": [
+      "x86-arm64-i386--old.json",
+      "x86-arm64-i386--middle.json",
+      "x86-arm64-i386--modern.json",
+      "arm64-x86-armv7--old.json",
+      "arm64-x86-armv7--middle.json",
+      "arm64-x86-armv7--modern.json",
+      "armv7-arm64-x86--old.json",
+      "armv7-arm64-x86--middle.json",
+      "armv7-arm64-x86--modern.json",
+      "i386-x86-arm64--old.json",
+      "i386-x86-arm64--middle.json",
+      "i386-x86-arm64--modern.json"
+    ],
+    "experimental": [],
+    "cohorts": {
+      "old": 0,
+      "middle": 1,
+      "modern": 2
+    },
+    "versions_by_arch": {
+      "x86_64": [
+        "v4.4",
+        "v5.4",
+        "v7.0"
+      ],
+      "i386": [
+        "v4.4",
+        "v5.4",
+        "v7.0"
+      ],
+      "aarch64": [
+        "v4.14",
+        "v5.4",
+        "v7.0"
+      ],
+      "armv7": [
+        "v4.14",
+        "v5.4",
+        "v7.0"
+      ],
+      "mips": [
+        "v4.14",
+        "v5.4",
+        "v7.0"
+      ],
+      "mipsel": [
+        "v4.14",
+        "v5.4",
+        "v7.0"
+      ]
+    }
+  }
+}

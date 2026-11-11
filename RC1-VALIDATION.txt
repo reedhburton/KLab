@@ -1,0 +1,24 @@
+KLab 1.0.0-rc1 validation
+Date: 2026-10-07
+
+PASS: bash tests/run-all.sh
+Evidence: ALL M2 NETWORK-FREE TESTS: PASS
+Shell regression scripts: 107
+BSD required floor: PASS
+BSD expansion rows: 4/4 PASS
+Fresh two-directory BSD simple CLI: 4/4 PASS
+
+Fresh commands exercised:
+  klab setup --root /tmp/klab-rc1-root --repo /tmp/klab-rc1-repo
+  klab pull TARGET
+  klab run TARGET
+
+Targets:
+  freebsd:14.5-RELEASE:i386
+  freebsd:14.5-RELEASE:riscv64
+  netbsd:11.0:aarch64
+  dragonfly:6.2.2:x86_64
+
+Official media were checksum verified. Guests ran without networking and used
+disposable writable overlays. Persistent transcripts are stored under
+library/bsd-evidence/rc1-fresh-cli in the development workspace.

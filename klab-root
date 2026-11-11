@@ -1,0 +1,198 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+SELF_DIR="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)"
+source "$SELF_DIR/lib/klab-root.sh"
+
+usage() {
+  cat <<'USAGE'
+Usage:
+  klab-root init
+  klab-root doctor
+  klab-root paths
+  klab-root normalize
+  klab-root migrate OLD_ROOT
+  klab-root prune-compat
+
+KLAB_ROOT defaults to ~/klab. Normal users should set only KLAB_ROOT.
+Legacy top-level symlinks are disabled by default in R25. Set
+KLAB_COMPAT_LINKS=1 only when an older/external script still needs them.
+`normalize` reorganizes an existing KLAB_ROOT in place.
+`migrate` moves a separate legacy KLAB_HOME into the canonical tree.
+Both refuse collisions.
+USAGE
+}
+
+move_one() {
+  local old="$1" new="$2"
+  [[ -e "$old" || -L "$old" ]] || return 0
+  [[ ! -L "$old" ]] || { printf 'skip symlink: %s\n' "$old"; return 0; }
+  if [[ -e "$new" || -L "$new" ]]; then
+    if [[ -d "$old" && -d "$new" ]] && [[ -z "$(find "$new" -mindepth 1 -maxdepth 1 -print -quit 2>/dev/null)" ]]; then
+      rmdir "$new"
+    else
+      printf 'collision: %s -> %s\n' "$old" "$new" >&2
+      return 1
+    fi
+  fi
+  mkdir -p "$(dirname "$new")"
+  mv "$old" "$new"
+  printf 'moved: %s -> %s\n' "$old" "$new"
+}
+
+merge_dir() {
+  local old="$1" new="$2" x dest
+  [[ -d "$old" && ! -L "$old" ]] || return 0
+  mkdir -p "$new"
+  shopt -s dotglob nullglob
+  for x in "$old"/*; do
+    [[ -e "$x" || -L "$x" ]] || continue
+    dest="$new/$(basename "$x")"
+    if [[ -d "$x" && ! -L "$x" && -d "$dest" && ! -L "$dest" ]] && [[ -z "$(find "$dest" -mindepth 1 -maxdepth 1 -print -quit 2>/dev/null)" ]]; then
+      rmdir "$dest"
+    fi
+    if [[ -e "$dest" || -L "$dest" ]]; then
+      printf 'collision: %s -> %s\n' "$x" "$dest" >&2
+      shopt -u dotglob nullglob
+      return 1
+    fi
+    mv "$x" "$dest"
+    printf 'moved: %s -> %s\n' "$x" "$dest"
+  done
+  shopt -u dotglob nullglob
+  rmdir "$old" 2>/dev/null || true
+}
+
+normalize_from() {
+  local old="$1"
+  move_one "$old/linux"      "$KLAB_CACHE/linux"
+  move_one "$old/sources"    "$KLAB_CACHE/sources"
+  move_one "$old/builds"     "$KLAB_WORK/builds"
+  move_one "$old/initramfs"  "$KLAB_WORK/initramfs"
+  move_one "$old/jobs"       "$KLAB_WORK/jobs"
+  move_one "$old/sessions"   "$KLAB_WORK/sessions"
+  move_one "$old/buildroot"  "$KLAB_WORK/buildroot"
+  move_one "$old/logs"       "$KLAB_RESULTS/logs"
+  move_one "$old/crashes"    "$KLAB_RESULTS/crashes"
+  move_one "$old/exports"    "$KLAB_TRANSFER/exports"
+  move_one "$old/kernels"    "$KLAB_TARGETS/kernels"
+  move_one "$old/toolchains" "$KLAB_TOOLCHAIN_STORE"
+  move_one "$old/guests"     "$KLAB_USERSPACE_STORE"
+  move_one "$old/buildenvs"         "$KLAB_BUILDENV_STORE"
+  move_one "$old/distro-toolchains" "$KLAB_DISTRO_TOOLCHAIN_STORE"
+  move_one "$old/userspaces"        "$KLAB_USERSPACE_STORE"
+  move_one "$old/MODE"       "$KLAB_STATE/MODE"
+}
+
+cmd_init() {
+  klab_root_ensure_layout
+  if [[ -e "$KLAB_ROOT/MODE" && ! -L "$KLAB_ROOT/MODE" ]]; then
+    if [[ ! -e "$KLAB_STATE/MODE" ]]; then mv "$KLAB_ROOT/MODE" "$KLAB_STATE/MODE"; fi
+  fi
+  [[ "$KLAB_COMPAT_LINKS" == 0 ]] || klab_root_compat_links
+  printf 'Initialized KLab root: %s\n' "$KLAB_ROOT"
+}
+
+cmd_paths() {
+  cat <<EOF_PATHS
+KLAB_ROOT=$KLAB_ROOT
+bin=$KLAB_BIN
+config=$KLAB_CONFIG
+artifacts=$KLAB_ARTIFACTS
+targets=$KLAB_TARGETS
+cache=$KLAB_CACHE
+work=$KLAB_WORK
+transfer=$KLAB_TRANSFER
+results=$KLAB_RESULTS
+state=$KLAB_STATE
+EOF_PATHS
+}
+
+cmd_doctor() {
+  local rc=0 p
+  printf 'KLab root: %s\n' "$KLAB_ROOT"
+  for p in "$KLAB_BIN" "$KLAB_CONFIG" "$KLAB_ARTIFACTS" "$KLAB_TARGETS" "$KLAB_CACHE" "$KLAB_WORK" "$KLAB_TRANSFER" "$KLAB_RESULTS" "$KLAB_STATE"; do
+    if [[ -d "$p" && -w "$p" ]]; then printf 'PASS  %s\n' "$p"; else printf 'FAIL  %s\n' "$p"; rc=1; fi
+  done
+  if [[ "$KLAB_COMPAT_LINKS" == 0 ]]; then
+    local leftovers=0
+    for p in linux sources builds initramfs jobs sessions buildroot logs crashes exports kernels toolchains guests buildenvs distro-toolchains userspaces MODE; do
+      if [[ -L "$KLAB_ROOT/$p" ]]; then
+        printf 'WARN  compat %-18s still present -> %s; run prune-compat when external users are ready\n' "$p" "$(readlink "$KLAB_ROOT/$p")"
+        leftovers=1
+      elif [[ -e "$KLAB_ROOT/$p" ]]; then
+        printf 'WARN  legacy %-18s is still a real path; run normalize\n' "$p"
+        leftovers=1
+      fi
+    done
+    if (( leftovers == 0 )); then printf 'PASS  compatibility paths absent (native-path default)\n'; fi
+  else
+    for p in linux sources builds initramfs jobs sessions buildroot logs crashes exports kernels toolchains guests buildenvs distro-toolchains userspaces MODE; do
+      if [[ -L "$KLAB_ROOT/$p" ]]; then
+        printf 'PASS  compat %-18s -> %s\n' "$p" "$(readlink "$KLAB_ROOT/$p")"
+      elif [[ -e "$KLAB_ROOT/$p" ]]; then
+        printf 'WARN  legacy %-18s is still a real path; run normalize\n' "$p"
+      else
+        printf 'FAIL  compat %-18s missing\n' "$p"; rc=1
+      fi
+    done
+  fi
+  return "$rc"
+}
+
+cmd_normalize() {
+  klab_root_mkdirs
+  normalize_from "$KLAB_ROOT"
+  [[ "$KLAB_COMPAT_LINKS" == 0 ]] || klab_root_compat_links
+  printf 'Normalized KLab root: %s\n' "$KLAB_ROOT"
+}
+
+cmd_migrate() {
+  local old="${1:?OLD_ROOT required}"
+  old="$(python3 - "$old" <<'PY'
+import os,sys
+print(os.path.abspath(os.path.expanduser(sys.argv[1])))
+PY
+)"
+  [[ "$old" != "$KLAB_ROOT" ]] || { echo 'OLD_ROOT and KLAB_ROOT are the same; use normalize.' >&2; return 2; }
+  [[ -d "$old" ]] || { echo "Not a directory: $old" >&2; return 2; }
+  klab_root_mkdirs
+  normalize_from "$old"
+  # A partially converted source root may already contain canonical buckets.
+  merge_dir "$old/artifacts" "$KLAB_ARTIFACTS"
+  merge_dir "$old/config"    "$KLAB_CONFIG"
+  merge_dir "$old/cache"     "$KLAB_CACHE"
+  merge_dir "$old/work"      "$KLAB_WORK"
+  merge_dir "$old/transfer"  "$KLAB_TRANSFER"
+  merge_dir "$old/results"   "$KLAB_RESULTS"
+  merge_dir "$old/state"     "$KLAB_STATE"
+  merge_dir "$old/targets"   "$KLAB_TARGETS"
+
+  # Preserve, do not delete, unknown legacy material.
+  mkdir -p "$KLAB_STATE/legacy-unclassified"
+  shopt -s dotglob nullglob
+  local x
+  for x in "$old"/*; do
+    [[ -e "$x" || -L "$x" ]] || continue
+    move_one "$x" "$KLAB_STATE/legacy-unclassified/$(basename "$x")"
+  done
+  shopt -u dotglob nullglob
+  rmdir "$old" 2>/dev/null || true
+  cmd_init
+}
+
+cmd_prune_compat() {
+  klab_root_mkdirs
+  klab_root_prune_compat_links
+  printf 'Compatibility links pruned from: %s\n' "$KLAB_ROOT"
+}
+
+case "${1:-}" in
+  init) shift; [[ $# -eq 0 ]] || { usage >&2; exit 2; }; cmd_init ;;
+  doctor) shift; [[ $# -eq 0 ]] || { usage >&2; exit 2; }; cmd_doctor ;;
+  paths) shift; [[ $# -eq 0 ]] || { usage >&2; exit 2; }; cmd_paths ;;
+  normalize) shift; [[ $# -eq 0 ]] || { usage >&2; exit 2; }; cmd_normalize ;;
+  migrate) shift; [[ $# -eq 1 ]] || { usage >&2; exit 2; }; cmd_migrate "$1" ;;
+  prune-compat) shift; [[ $# -eq 0 ]] || { usage >&2; exit 2; }; cmd_prune_compat ;;
+  -h|--help|help|'') usage ;;
+  *) usage >&2; exit 2 ;;
+esac

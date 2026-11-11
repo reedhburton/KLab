@@ -1,0 +1,26 @@
+{
+  "schema": "klab-scenario-v1",
+  "target": "ubuntu:24.04",
+  "arch": "x86_64",
+  "profile": "normal",
+  "userspace": "native",
+  "timeout_seconds": 45,
+  "processes": [
+    {
+      "id": "bash_session",
+      "command": "/bin/bash -eu -c 'echo BASHPID=$$; mkdir -p /tmp/klab-demo; : > /tmp/klab-demo/shell-ready; while [[ ! -f /tmp/klab-demo/input.env ]]; do sleep 0.1; done; source /tmp/klab-demo/input.env; printf \"READ_ONE=%s\\n\" \"$MESSAGE\"; printf \"ack:%s\\n\" \"$MESSAGE\" > /tmp/klab-demo/ack; while [[ ! -f /tmp/klab-demo/final.txt ]]; do sleep 0.1; done; printf \"READ_TWO=%s\\n\" \"$(cat /tmp/klab-demo/final.txt)\"; echo BASH_SESSION_DONE'",
+      "expected_exit": 0
+    },
+    {
+      "id": "file_producer",
+      "steps": [
+        {"run": "while [ ! -f /tmp/klab-demo/shell-ready ]; do sleep 1; done"},
+        {"run": "printf '%s\\n' 'MESSAGE=hello-from-producer' > /tmp/klab-demo/input.env"},
+        {"run": "while [ ! -f /tmp/klab-demo/ack ]; do sleep 1; done; grep -q '^ack:hello-from-producer$' /tmp/klab-demo/ack"},
+        {"run": "printf '%s\\n' 'producer-observed-ack' > /tmp/klab-demo/final.txt"}
+      ],
+      "expected_exit": 0
+    }
+  ],
+  "collect": {"dmesg": true, "events": true}
+}

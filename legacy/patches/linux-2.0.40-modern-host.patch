@@ -1,0 +1,1626 @@
+--- a/scripts/Configure
++++ b/scripts/Configure
+@@ -113,7 +113,10 @@
+ #	readln prompt default oldval
+ #
+ function readln () {
+-	if [ "$DEFAULT" = "-d" -a -n "$3" ]; then
++	# KLab: oldconfig is the noninteractive interface. Linux 2.0 opened
++	# /dev/tty for options missing from an older seed, which breaks headless
++	# and CI builds. Accept the option's declared default in -d mode.
++	if [ "$DEFAULT" = "-d" ]; then
+ 		echo "$1"
+ 		ans=$2
+ 	else
+--- a/include/asm-i386/segment.h
++++ b/include/asm-i386/segment.h
+@@ -82,28 +82,12 @@
+ 
+ static inline void __generic_memcpy_tofs(void * to, const void * from, unsigned long n)
+ {
++    unsigned long d0, d1, d2;
+     __asm__ volatile
+-	("	cld
+-		push %%es
+-		push %%fs
+-		cmpl $3,%0
+-		pop %%es
+-		jbe 1f
+-		movl %%edi,%%ecx
+-		negl %%ecx
+-		andl $3,%%ecx
+-		subl %%ecx,%0
+-		rep; movsb
+-		movl %0,%%ecx
+-		shrl $2,%%ecx
+-		rep; movsl
+-		andl $3,%0
+-	1:	movl %0,%%ecx
+-		rep; movsb
+-		pop %%es"
+-	:"=abd" (n)
+-	:"0" (n),"D" ((long) to),"S" ((long) from)
+-	:"cx","di","si");
++	("\tcld\n\tpush %%es\n\tpush %%fs\n\tcmpl $3,%0\n\tpop %%es\n\tjbe 1f\n\tmovl %%edi,%%ecx\n\tnegl %%ecx\n\tandl $3,%%ecx\n\tsubl %%ecx,%0\n\trep; movsb\n\tmovl %0,%%ecx\n\tshrl $2,%%ecx\n\trep; movsl\n\tandl $3,%0\n1:\tmovl %0,%%ecx\n\trep; movsb\n\tpop %%es"
++	:"=&abd" (n), "=&c" (d0), "=&D" (d1), "=&S" (d2)
++	:"0" (n), "2" ((long) to), "3" ((long) from)
++	:"memory");
+ }
+ 
+ static inline void __constant_memcpy_tofs(void * to, const void * from, unsigned long n)
+@@ -139,6 +123,9 @@
+ 			__put_user(*(2+(const int *) from), 2+(int *) to, 4);
+ 			__put_user(*(3+(const int *) from), 3+(int *) to, 4);
+ 			return;
++		default:
++			__generic_memcpy_tofs(to, from, n);
++			return;
+ 	}
+ #define COMMON(x) \
+ __asm__("cld\n\t" \
+@@ -148,9 +135,9 @@
+ 	"rep ; movsl\n\t" \
+ 	x \
+ 	"pop %%es" \
+-	: /* no outputs */ \
+-	:"c" (n/4),"D" ((long) to),"S" ((long) from) \
+-	:"cx","di","si")
++	: "=&c" (n), "=&D" (to), "=&S" (from) \
++	: "0" (n/4), "1" (to), "2" (from) \
++	: "memory")
+ 
+ 	switch (n % 4) {
+ 		case 0:
+@@ -171,24 +158,12 @@
+ 
+ static inline void __generic_memcpy_fromfs(void * to, const void * from, unsigned long n)
+ {
++    unsigned long d0, d1, d2;
+     __asm__ volatile
+-	("	cld
+-		cmpl $3,%0
+-		jbe 1f
+-		movl %%edi,%%ecx
+-		negl %%ecx
+-		andl $3,%%ecx
+-		subl %%ecx,%0
+-		fs; rep; movsb
+-		movl %0,%%ecx
+-		shrl $2,%%ecx
+-		fs; rep; movsl
+-		andl $3,%0
+-	1:	movl %0,%%ecx
+-		fs; rep; movsb"
+-	:"=abd" (n)
+-	:"0" (n),"D" ((long) to),"S" ((long) from)
+-	:"cx","di","si", "memory");
++	("\tcld\n\tcmpl $3,%0\n\tjbe 1f\n\tmovl %%edi,%%ecx\n\tnegl %%ecx\n\tandl $3,%%ecx\n\tsubl %%ecx,%0\n\tfs; rep; movsb\n\tmovl %0,%%ecx\n\tshrl $2,%%ecx\n\tfs; rep; movsl\n\tandl $3,%0\n1:\tmovl %0,%%ecx\n\tfs; rep; movsb"
++	:"=&abd" (n), "=&c" (d0), "=&D" (d1), "=&S" (d2)
++	:"0" (n), "2" ((long) to), "3" ((long) from)
++	:"memory");
+ }
+ 
+ static inline void __constant_memcpy_fromfs(void * to, const void * from, unsigned long n)
+@@ -224,14 +199,17 @@
+ 			*(2+(int *) to) = __get_user(2+(const int *) from, 4);
+ 			*(3+(int *) to) = __get_user(3+(const int *) from, 4);
+ 			return;
++		default:
++			__generic_memcpy_fromfs(to, from, n);
++			return;
+ 	}
+ #define COMMON(x) \
+ __asm__("cld\n\t" \
+ 	"rep ; fs ; movsl\n\t" \
+ 	x \
+-	: /* no outputs */ \
+-	:"c" (n/4),"D" ((long) to),"S" ((long) from) \
+-	:"cx","di","si","memory")
++	: "=&c" (n), "=&D" (to), "=&S" (from) \
++	: "0" (n/4), "1" (to), "2" (from) \
++	: "memory")
+ 
+ 	switch (n % 4) {
+ 		case 0:
+--- a/include/asm-i386/string.h
++++ b/include/asm-i386/string.h
+@@ -23,26 +23,29 @@
+  * set, making the functions fast and clean. String instructions have been
+  * used through-out, making for "slightly" unclear code :-)
+  *
+- *		Copyright (C) 1991, 1992 Linus Torvalds
++ *		NO Copyright (C) 1991, 1992 Linus Torvalds,
++ *		consider these trivial functions to be PD.
+  */
+ 
+ #define __HAVE_ARCH_STRCPY
+ extern inline char * strcpy(char * dest,const char *src)
+ {
++int d0, d1, d2;
+ __asm__ __volatile__(
+ 	"cld\n"
+ 	"1:\tlodsb\n\t"
+ 	"stosb\n\t"
+ 	"testb %%al,%%al\n\t"
+ 	"jne 1b"
+-	: /* no output */
+-	:"S" (src),"D" (dest):"si","di","ax","memory");
++	: "=&S" (d0), "=&D" (d1), "=&a" (d2)
++	:"0" (src),"1" (dest) : "memory");
+ return dest;
+ }
+ 
+ #define __HAVE_ARCH_STRNCPY
+ extern inline char * strncpy(char * dest,const char *src,size_t count)
+ {
++int d0, d1, d2, d3;
+ __asm__ __volatile__(
+ 	"cld\n"
+ 	"1:\tdecl %2\n\t"
+@@ -54,14 +57,15 @@
+ 	"rep\n\t"
+ 	"stosb\n"
+ 	"2:"
+-	: /* no output */
+-	:"S" (src),"D" (dest),"c" (count):"si","di","ax","cx","memory");
++	: "=&S" (d0), "=&D" (d1), "=&c" (d2), "=&a" (d3)
++	:"0" (src),"1" (dest),"2" (count) : "memory");
+ return dest;
+ }
+ 
+ #define __HAVE_ARCH_STRCAT
+ extern inline char * strcat(char * dest,const char * src)
+ {
++int d0, d1, d2, d3;
+ __asm__ __volatile__(
+ 	"cld\n\t"
+ 	"repne\n\t"
+@@ -71,20 +75,21 @@
+ 	"stosb\n\t"
+ 	"testb %%al,%%al\n\t"
+ 	"jne 1b"
+-	: /* no output */
+-	:"S" (src),"D" (dest),"a" (0),"c" (0xffffffff):"si","di","ax","cx");
++	: "=&S" (d0), "=&D" (d1), "=&a" (d2), "=&c" (d3)
++	: "0" (src), "1" (dest), "2" (0), "3" (0xffffffff):"memory");
+ return dest;
+ }
+ 
+ #define __HAVE_ARCH_STRNCAT
+ extern inline char * strncat(char * dest,const char * src,size_t count)
+ {
++int d0, d1, d2, d3;
+ __asm__ __volatile__(
+ 	"cld\n\t"
+ 	"repne\n\t"
+ 	"scasb\n\t"
+ 	"decl %1\n\t"
+-	"movl %4,%3\n"
++	"movl %8,%3\n"
+ 	"1:\tdecl %3\n\t"
+ 	"js 2f\n\t"
+ 	"lodsb\n\t"
+@@ -93,15 +98,16 @@
+ 	"jne 1b\n"
+ 	"2:\txorl %2,%2\n\t"
+ 	"stosb"
+-	: /* no output */
+-	:"S" (src),"D" (dest),"a" (0),"c" (0xffffffff),"g" (count)
+-	:"si","di","ax","cx","memory");
++	: "=&S" (d0), "=&D" (d1), "=&a" (d2), "=&c" (d3)
++	: "0" (src),"1" (dest),"2" (0),"3" (0xffffffff), "g" (count)
++	: "memory");
+ return dest;
+ }
+ 
+ #define __HAVE_ARCH_STRCMP
+ extern inline int strcmp(const char * cs,const char * ct)
+ {
++int d0, d1;
+ register int __res;
+ __asm__ __volatile__(
+ 	"cld\n"
+@@ -113,9 +119,10 @@
+ 	"xorl %%eax,%%eax\n\t"
+ 	"jmp 3f\n"
+ 	"2:\tsbbl %%eax,%%eax\n\t"
+-	"orb $1,%%eax\n"
++	"orb $1,%%al\n"
+ 	"3:"
+-	:"=a" (__res):"S" (cs),"D" (ct):"si","di");
++	:"=a" (__res), "=&S" (d0), "=&D" (d1)
++		     :"1" (cs),"2" (ct));
+ return __res;
+ }
+ 
+@@ -123,6 +130,7 @@
+ extern inline int strncmp(const char * cs,const char * ct,size_t count)
+ {
+ register int __res;
++int d0, d1, d2;
+ __asm__ __volatile__(
+ 	"cld\n"
+ 	"1:\tdecl %3\n\t"
+@@ -137,13 +145,15 @@
+ 	"3:\tsbbl %%eax,%%eax\n\t"
+ 	"orb $1,%%al\n"
+ 	"4:"
+-	:"=a" (__res):"S" (cs),"D" (ct),"c" (count):"si","di","cx");
++		     :"=a" (__res), "=&S" (d0), "=&D" (d1), "=&c" (d2)
++		     :"1" (cs),"2" (ct),"3" (count));
+ return __res;
+ }
+ 
+ #define __HAVE_ARCH_STRCHR
+ extern inline char * strchr(const char * s, int c)
+ {
++int d0;
+ register char * __res;
+ __asm__ __volatile__(
+ 	"cld\n\t"
+@@ -156,13 +166,14 @@
+ 	"movl $1,%1\n"
+ 	"2:\tmovl %1,%0\n\t"
+ 	"decl %0"
+-	:"=a" (__res):"S" (s),"0" (c):"si");
++	:"=a" (__res), "=&S" (d0) : "1" (s),"0" (c));
+ return __res;
+ }
+ 
+ #define __HAVE_ARCH_STRRCHR
+ extern inline char * strrchr(const char * s, int c)
+ {
++int d0, d1;
+ register char * __res;
+ __asm__ __volatile__(
+ 	"cld\n\t"
+@@ -173,123 +184,14 @@
+ 	"leal -1(%%esi),%0\n"
+ 	"2:\ttestb %%al,%%al\n\t"
+ 	"jne 1b"
+-	:"=d" (__res):"0" (0),"S" (s),"a" (c):"ax","si");
+-return __res;
+-}
+-
+-#define __HAVE_ARCH_STRSPN
+-extern inline size_t strspn(const char * cs, const char * ct)
+-{
+-register char * __res;
+-__asm__ __volatile__(
+-	"cld\n\t"
+-	"movl %4,%%edi\n\t"
+-	"repne\n\t"
+-	"scasb\n\t"
+-	"notl %%ecx\n\t"
+-	"decl %%ecx\n\t"
+-	"movl %%ecx,%%edx\n"
+-	"1:\tlodsb\n\t"
+-	"testb %%al,%%al\n\t"
+-	"je 2f\n\t"
+-	"movl %4,%%edi\n\t"
+-	"movl %%edx,%%ecx\n\t"
+-	"repne\n\t"
+-	"scasb\n\t"
+-	"je 1b\n"
+-	"2:\tdecl %0"
+-	:"=S" (__res):"a" (0),"c" (0xffffffff),"0" (cs),"g" (ct)
+-	:"ax","cx","dx","di");
+-return __res-cs;
+-}
+-
+-#define __HAVE_ARCH_STRCSPN
+-extern inline size_t strcspn(const char * cs, const char * ct)
+-{
+-register char * __res;
+-__asm__ __volatile__(
+-	"cld\n\t"
+-	"movl %4,%%edi\n\t"
+-	"repne\n\t"
+-	"scasb\n\t"
+-	"notl %%ecx\n\t"
+-	"decl %%ecx\n\t"
+-	"movl %%ecx,%%edx\n"
+-	"1:\tlodsb\n\t"
+-	"testb %%al,%%al\n\t"
+-	"je 2f\n\t"
+-	"movl %4,%%edi\n\t"
+-	"movl %%edx,%%ecx\n\t"
+-	"repne\n\t"
+-	"scasb\n\t"
+-	"jne 1b\n"
+-	"2:\tdecl %0"
+-	:"=S" (__res):"a" (0),"c" (0xffffffff),"0" (cs),"g" (ct)
+-	:"ax","cx","dx","di");
+-return __res-cs;
+-}
+-
+-#define __HAVE_ARCH_STRPBRK
+-extern inline char * strpbrk(const char * cs,const char * ct)
+-{
+-register char * __res;
+-__asm__ __volatile__(
+-	"cld\n\t"
+-	"movl %4,%%edi\n\t"
+-	"repne\n\t"
+-	"scasb\n\t"
+-	"notl %%ecx\n\t"
+-	"decl %%ecx\n\t"
+-	"movl %%ecx,%%edx\n"
+-	"1:\tlodsb\n\t"
+-	"testb %%al,%%al\n\t"
+-	"je 2f\n\t"
+-	"movl %4,%%edi\n\t"
+-	"movl %%edx,%%ecx\n\t"
+-	"repne\n\t"
+-	"scasb\n\t"
+-	"jne 1b\n\t"
+-	"decl %0\n\t"
+-	"jmp 3f\n"
+-	"2:\txorl %0,%0\n"
+-	"3:"
+-	:"=S" (__res):"a" (0),"c" (0xffffffff),"0" (cs),"g" (ct)
+-	:"ax","cx","dx","di");
+-return __res;
+-}
+-
+-#define __HAVE_ARCH_STRSTR
+-extern inline char * strstr(const char * cs,const char * ct)
+-{
+-register char * __res;
+-__asm__ __volatile__(
+-	"cld\n\t" \
+-	"movl %4,%%edi\n\t"
+-	"repne\n\t"
+-	"scasb\n\t"
+-	"notl %%ecx\n\t"
+-	"decl %%ecx\n\t"	/* NOTE! This also sets Z if searchstring='' */
+-	"movl %%ecx,%%edx\n"
+-	"1:\tmovl %4,%%edi\n\t"
+-	"movl %%esi,%%eax\n\t"
+-	"movl %%edx,%%ecx\n\t"
+-	"repe\n\t"
+-	"cmpsb\n\t"
+-	"je 2f\n\t"		/* also works for empty string, see above */
+-	"xchgl %%eax,%%esi\n\t"
+-	"incl %%esi\n\t"
+-	"cmpb $0,-1(%%eax)\n\t"
+-	"jne 1b\n\t"
+-	"xorl %%eax,%%eax\n\t"
+-	"2:"
+-	:"=a" (__res):"0" (0),"c" (0xffffffff),"S" (cs),"g" (ct)
+-	:"cx","dx","di","si");
++	:"=g" (__res), "=&S" (d0), "=&a" (d1) :"0" (0),"1" (s),"2" (c));
+ return __res;
+ }
+ 
+ #define __HAVE_ARCH_STRLEN
+ extern inline size_t strlen(const char * s)
+ {
++int d0;
+ register int __res;
+ __asm__ __volatile__(
+ 	"cld\n\t"
+@@ -297,86 +199,26 @@
+ 	"scasb\n\t"
+ 	"notl %0\n\t"
+ 	"decl %0"
+-	:"=c" (__res):"D" (s),"a" (0),"0" (0xffffffff):"di");
+-return __res;
+-}
+-
+-#define __HAVE_ARCH_STRTOK
+-extern inline char * strtok(char * s,const char * ct)
+-{
+-register char * __res;
+-__asm__ __volatile__(
+-	"testl %1,%1\n\t"
+-	"jne 1f\n\t"
+-	"testl %0,%0\n\t"
+-	"je 8f\n\t"
+-	"movl %0,%1\n"
+-	"1:\txorl %0,%0\n\t"
+-	"movl $-1,%%ecx\n\t"
+-	"xorl %%eax,%%eax\n\t"
+-	"cld\n\t"
+-	"movl %4,%%edi\n\t"
+-	"repne\n\t"
+-	"scasb\n\t"
+-	"notl %%ecx\n\t"
+-	"decl %%ecx\n\t"
+-	"je 7f\n\t"			/* empty delimiter-string */
+-	"movl %%ecx,%%edx\n"
+-	"2:\tlodsb\n\t"
+-	"testb %%al,%%al\n\t"
+-	"je 7f\n\t"
+-	"movl %4,%%edi\n\t"
+-	"movl %%edx,%%ecx\n\t"
+-	"repne\n\t"
+-	"scasb\n\t"
+-	"je 2b\n\t"
+-	"decl %1\n\t"
+-	"cmpb $0,(%1)\n\t"
+-	"je 7f\n\t"
+-	"movl %1,%0\n"
+-	"3:\tlodsb\n\t"
+-	"testb %%al,%%al\n\t"
+-	"je 5f\n\t"
+-	"movl %4,%%edi\n\t"
+-	"movl %%edx,%%ecx\n\t"
+-	"repne\n\t"
+-	"scasb\n\t"
+-	"jne 3b\n\t"
+-	"decl %1\n\t"
+-	"cmpb $0,(%1)\n\t"
+-	"je 5f\n\t"
+-	"movb $0,(%1)\n\t"
+-	"incl %1\n\t"
+-	"jmp 6f\n"
+-	"5:\txorl %1,%1\n"
+-	"6:\tcmpb $0,(%0)\n\t"
+-	"jne 7f\n\t"
+-	"xorl %0,%0\n"
+-	"7:\ttestl %0,%0\n\t"
+-	"jne 8f\n\t"
+-	"movl %0,%1\n"
+-	"8:"
+-	:"=b" (__res),"=S" (___strtok)
+-	:"0" (___strtok),"1" (s),"g" (ct)
+-	:"ax","cx","dx","di","memory");
++	:"=c" (__res), "=&D" (d0) :"1" (s),"a" (0), "0" (0xffffffff));
+ return __res;
+ }
+ 
+ extern inline void * __memcpy(void * to, const void * from, size_t n)
+ {
++int d0, d1, d2;
+ __asm__ __volatile__(
+ 	"cld\n\t"
+ 	"rep ; movsl\n\t"
+-	"testb $2,%b1\n\t"
++	"testb $2,%b4\n\t"
+ 	"je 1f\n\t"
+ 	"movsw\n"
+-	"1:\ttestb $1,%b1\n\t"
++	"1:\ttestb $1,%b4\n\t"
+ 	"je 2f\n\t"
+ 	"movsb\n"
+ 	"2:"
+-	: /* no output */
+-	:"c" (n/4), "q" (n),"D" ((long) to),"S" ((long) from)
+-	: "cx","di","si","memory");
++	: "=&c" (d0), "=&D" (d1), "=&S" (d2)
++	:"0" (n/4), "q" (n),"1" ((long) to),"2" ((long) from)
++	: "memory");
+ return (to);
+ }
+ 
+@@ -402,6 +244,10 @@
+ 		case 4:
+ 			*(unsigned long *)to = *(const unsigned long *)from;
+ 			return to;
++		case 6:	/* for Ethernet addresses */
++			*(unsigned long *)to = *(const unsigned long *)from;
++			*(2+(unsigned short *)to) = *(2+(const unsigned short *)from);
++			return to;
+ 		case 8:
+ 			*(unsigned long *)to = *(const unsigned long *)from;
+ 			*(1+(unsigned long *)to) = *(1+(const unsigned long *)from);
+@@ -426,19 +272,23 @@
+ 			return to;
+ 	}
+ #define COMMON(x) \
+-__asm__("cld\n\t" \
++__asm__ __volatile__( \
++	"cld\n\t" \
+ 	"rep ; movsl" \
+ 	x \
+-	: /* no outputs */ \
+-	: "c" (n/4),"D" ((long) to),"S" ((long) from) \
+-	: "cx","di","si","memory");
+-
++	: "=&c" (d0), "=&D" (d1), "=&S" (d2) \
++	: "0" (n/4),"1" ((long) to),"2" ((long) from) \
++	: "memory");
++{
++	int d0, d1, d2;
+ 	switch (n % 4) {
+ 		case 0: COMMON(""); return to;
+ 		case 1: COMMON("\n\tmovsb"); return to;
+ 		case 2: COMMON("\n\tmovsw"); return to;
+-		case 3: COMMON("\n\tmovsw\n\tmovsb"); return to;
++		default: COMMON("\n\tmovsw\n\tmovsb"); return to;
+ 	}
++}
++  
+ #undef COMMON
+ }
+ 
+@@ -451,25 +301,26 @@
+ #define __HAVE_ARCH_MEMMOVE
+ extern inline void * memmove(void * dest,const void * src, size_t n)
+ {
++int d0, d1, d2;
+ if (dest<src)
+ __asm__ __volatile__(
+ 	"cld\n\t"
+ 	"rep\n\t"
+ 	"movsb"
+-	: /* no output */
+-	:"c" (n),"S" (src),"D" (dest)
+-	:"cx","si","di");
++	: "=&c" (d0), "=&S" (d1), "=&D" (d2)
++	:"0" (n),"1" (src),"2" (dest)
++	: "memory");
+ else
+ __asm__ __volatile__(
+ 	"std\n\t"
+ 	"rep\n\t"
+ 	"movsb\n\t"
+ 	"cld"
+-	: /* no output */
+-	:"c" (n),
+-	 "S" (n-1+(const char *)src),
+-	 "D" (n-1+(char *)dest)
+-	:"cx","si","di","memory");
++	: "=&c" (d0), "=&S" (d1), "=&D" (d2)
++	:"0" (n),
++	 "1" (n-1+(const char *)src),
++	 "2" (n-1+(char *)dest)
++	:"memory");
+ return dest;
+ }
+ 
+@@ -478,6 +329,7 @@
+ #define __HAVE_ARCH_MEMCHR
+ extern inline void * memchr(const void * cs,int c,size_t count)
+ {
++int d0;
+ register void * __res;
+ if (!count)
+ 	return NULL;
+@@ -488,20 +340,20 @@
+ 	"je 1f\n\t"
+ 	"movl $1,%0\n"
+ 	"1:\tdecl %0"
+-	:"=D" (__res):"a" (c),"D" (cs),"c" (count)
+-	:"cx");
++	:"=D" (__res), "=&c" (d0) : "a" (c),"0" (cs),"1" (count));
+ return __res;
+ }
+ 
+ extern inline void * __memset_generic(void * s, char c,size_t count)
+ {
++int d0, d1;
+ __asm__ __volatile__(
+ 	"cld\n\t"
+ 	"rep\n\t"
+ 	"stosb"
+-	: /* no output */
+-	:"a" (c),"D" (s),"c" (count)
+-	:"cx","di","memory");
++	: "=&c" (d0), "=&D" (d1)
++	:"a" (c),"1" (s),"0" (count)
++	:"memory");
+ return s;
+ }
+ 
+@@ -515,19 +367,20 @@
+  */
+ extern inline void * __constant_c_memset(void * s, unsigned long c, size_t count)
+ {
++int d0, d1;
+ __asm__ __volatile__(
+ 	"cld\n\t"
+ 	"rep ; stosl\n\t"
+-	"testb $2,%b1\n\t"
++	"testb $2,%b3\n\t"
+ 	"je 1f\n\t"
+ 	"stosw\n"
+-	"1:\ttestb $1,%b1\n\t"
++	"1:\ttestb $1,%b3\n\t"
+ 	"je 2f\n\t"
+ 	"stosb\n"
+ 	"2:"
+-	: /* no output */
+-	:"a" (c), "q" (count), "c" (count/4), "D" ((long) s)
+-	:"cx","di","memory");
++	: "=&c" (d0), "=&D" (d1)
++	:"a" (c), "q" (count), "0" (count/4), "1" ((long) s)
++	:"memory");
+ return (s);	
+ }
+ 
+@@ -535,20 +388,20 @@
+ #define __HAVE_ARCH_STRNLEN
+ extern inline size_t strnlen(const char * s, size_t count)
+ {
++int d0;
+ register int __res;
+ __asm__ __volatile__(
+-	"movl %1,%0\n\t"
++	"movl %2,%0\n\t"
+ 	"jmp 2f\n"
+ 	"1:\tcmpb $0,(%0)\n\t"
+ 	"je 3f\n\t"
+ 	"incl %0\n"
+-	"2:\tdecl %2\n\t"
+-	"cmpl $-1,%2\n\t"
++	"2:\tdecl %1\n\t"
++	"cmpl $-1,%1\n\t"
+ 	"jne 1b\n"
+-	"3:\tsubl %1,%0"
+-	:"=a" (__res)
+-	:"c" (s),"d" (count)
+-	:"dx");
++	"3:\tsubl %2,%0"
++	:"=a" (__res), "=&d" (d0)
++	:"c" (s),"1" (count));
+ return __res;
+ }
+ /* end of additional stuff */
+@@ -577,19 +430,22 @@
+ 			return s;
+ 	}
+ #define COMMON(x) \
+-__asm__("cld\n\t" \
++__asm__  __volatile__("cld\n\t" \
+ 	"rep ; stosl" \
+ 	x \
+-	: /* no outputs */ \
+-	: "a" (pattern),"c" (count/4),"D" ((long) s) \
+-	: "cx","di","memory")
+-
++	: "=&c" (d0), "=&D" (d1) \
++	: "a" (pattern),"0" (count/4),"1" ((long) s) \
++	: "memory")
++{
++	int d0, d1;
+ 	switch (count % 4) {
+ 		case 0: COMMON(""); return s;
+ 		case 1: COMMON("\n\tstosb"); return s;
+ 		case 2: COMMON("\n\tstosw"); return s;
+-		case 3: COMMON("\n\tstosw\n\tstosb"); return s;
++		default: COMMON("\n\tstosw\n\tstosb"); return s;
+ 	}
++}
++  
+ #undef COMMON
+ }
+ 
+@@ -606,7 +462,7 @@
+ #define __HAVE_ARCH_MEMSET
+ #define memset(s, c, count) \
+ (__builtin_constant_p(c) ? \
+- __constant_c_x_memset((s),(0x01010101UL*(unsigned char)c),(count)) : \
++ __constant_c_x_memset((s),(0x01010101UL*(unsigned char)(c)),(count)) : \
+  __memset((s),(c),(count)))
+ 
+ /*
+@@ -617,11 +473,7 @@
+ {
+ 	if (!size)
+ 		return addr;
+-	__asm__("cld
+-		repnz; scasb
+-		jnz 1f
+-		dec %%edi
+-1:		"
++	__asm__("cld\n\trepnz; scasb\n\tjnz 1f\n\tdec %%edi\n1:\t"
+ 		: "=D" (addr), "=c" (size)
+ 		: "0" (addr), "1" (size), "a" (c));
+ 	return addr;
+--- a/include/asm-i386/delay.h
++++ b/include/asm-i386/delay.h
+@@ -20,8 +20,7 @@
+ 	__asm__ __volatile__(
+ 		"call " SYMBOL_NAME_STR(__do_delay)
+ 		:/* no outputs */
+-		:"a" (loops)
+-		:"ax");
++		:"a" (loops));
+ }
+ 
+ /*
+@@ -44,7 +43,7 @@
+ #else
+ 		:"a" (usecs),"0" (loops_per_sec)
+ #endif
+-		:"ax");
++		);
+ 		
+ 	__delay(usecs);
+ }
+@@ -55,8 +54,7 @@
+ 		:"=a" (a)
+ 		:"d" (b),
+ 		 "r" (c),
+-		 "0" (a)
+-		:"dx");
++		 "0" (a));
+ 	return a;
+ }
+ 
+--- a/include/asm-i386/bitops.h
++++ b/include/asm-i386/bitops.h
+@@ -74,6 +74,7 @@
+  */
+ extern __inline__ int find_first_zero_bit(void * addr, unsigned size)
+ {
++	int d0, d1, d2;
+ 	int res;
+
+ 	if (!size)
+@@ -89,9 +90,8 @@
+ 		"1:\tsubl %%ebx,%%edi\n\t"
+ 		"shll $3,%%edi\n\t"
+ 		"addl %%edi,%%edx"
+-		:"=d" (res)
+-		:"c" ((size + 31) >> 5), "D" (addr), "b" (addr)
+-		:"ax", "cx", "di");
++		:"=d" (res), "=&c" (d0), "=&D" (d1), "=&a" (d2)
++		:"1" ((size + 31) >> 5), "2" (addr), "b" (addr));
+ 	return res;
+ }
+
+--- a/include/asm-i386/checksum.h
++++ b/include/asm-i386/checksum.h
+@@ -46,25 +46,7 @@
+ 					  unsigned int ihl) {
+ 	unsigned int sum;
+
+-	__asm__ __volatile__("
+-	    movl (%1), %0
+-	    subl $4, %2
+-	    jbe 2f
+-	    addl 4(%1), %0
+-	    adcl 8(%1), %0
+-	    adcl 12(%1), %0
+-1:	    adcl 16(%1), %0
+-	    lea 4(%1), %1
+-	    decl %2
+-	    jne	1b
+-	    adcl $0, %0
+-	    movl %0, %2
+-	    shrl $16, %0
+-	    addw %w2, %w0
+-	    adcl $0, %0
+-	    notl %0
+-2:
+-	    "
++	__asm__ __volatile__("\n	    movl (%1), %0\n	    subl $4, %2\n	    jbe 2f\n	    addl 4(%1), %0\n	    adcl 8(%1), %0\n	    adcl 12(%1), %0\n1:	    adcl 16(%1), %0\n	    lea 4(%1), %1\n	    decl %2\n	    jne	1b\n	    adcl $0, %0\n	    movl %0, %2\n	    shrl $16, %0\n	    addw %w2, %w0\n	    adcl $0, %0\n	    notl %0\n2:\n	    "
+ 	/* Since the input registers which are loaded with iph and ipl
+ 	   are modified, we must also specify them as outputs, or gcc
+ 	   will assume they contain their original values. */
+@@ -79,10 +61,7 @@
+
+ static inline unsigned int csum_fold(unsigned int sum)
+ {
+-	__asm__("
+-		addl %1, %0
+-		adcl $0xffff, %0
+-		"
++	__asm__("\n		addl %1, %0\n		adcl $0xffff, %0\n		"
+ 		: "=r" (sum)
+ 		: "r" (sum << 16), "0" (sum & 0xffff0000)
+ 	);
+@@ -99,12 +78,7 @@
+ 						   unsigned short len,
+ 						   unsigned short proto,
+ 						   unsigned int sum) {
+-    __asm__("
+-	addl %1, %0
+-	adcl %2, %0
+-	adcl %3, %0
+-	adcl $0, %0
+-	"
++    __asm__("\n	addl %1, %0\n	adcl %2, %0\n	adcl %3, %0\n	adcl $0, %0\n	"
+ 	: "=r" (sum)
+ 	: "g" (daddr), "g"(saddr), "g"((ntohs(len)<<16)+proto*256), "0"(sum));
+ 	return csum_fold(sum);
+--- a/include/asm-i386/system.h
++++ b/include/asm-i386/system.h
+@@ -233,15 +233,17 @@
+ #define iret() __asm__ __volatile__ ("iret": : :"memory")
+
+ #define _set_gate(gate_addr,type,dpl,addr) \
+-__asm__ __volatile__ ("movw %%dx,%%ax\n\t" \
+-	"movw %2,%%dx\n\t" \
++do { \
++  int __d0, __d1; \
++  __asm__ __volatile__ ("movw %%dx,%%ax\n\t" \
++	"movw %4,%%dx\n\t" \
+ 	"movl %%eax,%0\n\t" \
+ 	"movl %%edx,%1" \
+ 	:"=m" (*((long *) (gate_addr))), \
+-	 "=m" (*(1+(long *) (gate_addr))) \
++	 "=m" (*(1+(long *) (gate_addr))), "=&a" (__d0), "=&d" (__d1) \
+ 	:"i" ((short) (0x8000+(dpl<<13)+(type<<8))), \
+-	 "d" ((char *) (addr)),"a" (KERNEL_CS << 16) \
+-	:"ax","dx")
++	 "3" ((char *) (addr)),"2" (KERNEL_CS << 16)); \
++} while (0)
+
+ #define set_intr_gate(n,addr) \
+ 	_set_gate(&idt[n],14,0,addr)
+--- a/arch/i386/mm/init.c
++++ b/arch/i386/mm/init.c
+@@ -56,28 +56,30 @@
+ pte_t * __bad_pagetable(void)
+ {
+ 	extern char empty_bad_page_table[PAGE_SIZE];
++	unsigned long d0, d1;
+
+ 	__asm__ __volatile__(
+ 		"cld ; rep ; stosl"
+-		:
++		: "=&D" (d0), "=&c" (d1)
+ 		: "a" (pte_val(BAD_PAGE)),
+-		  "D" ((long) empty_bad_page_table),
+-		  "c" (PAGE_SIZE/4)
+-		: "di","cx");
++		  "0" ((long) empty_bad_page_table),
++		  "1" (PAGE_SIZE/4)
++		: "memory");
+ 	return (pte_t *) empty_bad_page_table;
+ }
+
+ pte_t __bad_page(void)
+ {
+ 	extern char empty_bad_page[PAGE_SIZE];
++	unsigned long d0, d1;
+
+ 	__asm__ __volatile__(
+ 		"cld ; rep ; stosl"
+-		:
++		: "=&D" (d0), "=&c" (d1)
+ 		: "a" (0),
+-		  "D" ((long) empty_bad_page),
+-		  "c" (PAGE_SIZE/4)
+-		: "di","cx");
++		  "0" ((long) empty_bad_page),
++		  "1" (PAGE_SIZE/4)
++		: "memory");
+ 	return pte_mkdirty(mk_pte((unsigned long) empty_bad_page, PAGE_SHARED));
+ }
+
+--- a/arch/i386/lib/checksum.c
++++ b/arch/i386/lib/checksum.c
+@@ -24,6 +24,7 @@
+  */
+
+ unsigned int csum_partial(const unsigned char * buff, int len, unsigned int sum) {
++	unsigned long d0, d1, d2, d3;
+ 	  /*
+ 	   * Experiments with ethernet and slip connections show that buff
+ 	   * is aligned on either a 2-byte or 4-byte boundary.  We get at
+@@ -31,67 +32,67 @@
+ 	   * Fortunately, it is easy to convert 2-byte alignment to 4-byte
+ 	   * alignment for the unrolled loop.
+ 	   */
+-	__asm__("
+-	    testl $2, %%esi		# Check alignment.
+-	    jz 2f			# Jump if alignment is ok.
+-	    subl $2, %%ecx		# Alignment uses up two bytes.
+-	    jae 1f			# Jump if we had at least two bytes.
+-	    addl $2, %%ecx		# ecx was < 2.  Deal with it.
+-	    jmp 4f
+-1:	    movw (%%esi), %%bx
+-	    addl $2, %%esi
+-	    addw %%bx, %%ax
+-	    adcl $0, %%eax
+-2:
+-	    movl %%ecx, %%edx
+-	    shrl $5, %%ecx
+-	    jz 2f
+-	    testl %%esi, %%esi
+-1:	    movl (%%esi), %%ebx
+-	    adcl %%ebx, %%eax
+-	    movl 4(%%esi), %%ebx
+-	    adcl %%ebx, %%eax
+-	    movl 8(%%esi), %%ebx
+-	    adcl %%ebx, %%eax
+-	    movl 12(%%esi), %%ebx
+-	    adcl %%ebx, %%eax
+-	    movl 16(%%esi), %%ebx
+-	    adcl %%ebx, %%eax
+-	    movl 20(%%esi), %%ebx
+-	    adcl %%ebx, %%eax
+-	    movl 24(%%esi), %%ebx
+-	    adcl %%ebx, %%eax
+-	    movl 28(%%esi), %%ebx
+-	    adcl %%ebx, %%eax
+-	    lea 32(%%esi), %%esi
+-	    dec %%ecx
+-	    jne 1b
+-	    adcl $0, %%eax
+-2:	    movl %%edx, %%ecx
+-	    andl $0x1c, %%edx
+-	    je 4f
+-	    shrl $2, %%edx
+-	    testl %%esi, %%esi
+-3:	    adcl (%%esi), %%eax
+-	    lea 4(%%esi), %%esi
+-	    dec %%edx
+-	    jne 3b
+-	    adcl $0, %%eax
+-4:	    andl $3, %%ecx
+-	    jz 7f
+-	    cmpl $2, %%ecx
+-	    jb 5f
+-	    movw (%%esi),%%cx
+-	    leal 2(%%esi),%%esi
+-	    je 6f
+-	    shll $16,%%ecx
+-5:	    movb (%%esi),%%cl
+-6:	    addl %%ecx,%%eax
+-	    adcl $0, %%eax
+-7:	    "
+-	: "=a"(sum)
+-	: "0"(sum), "c"(len), "S"(buff)
+-	: "bx", "cx", "dx", "si");
++	__asm__(
++	"	    testl $2, %%esi		# Check alignment.\n"
++	"	    jz 2f			# Jump if alignment is ok.\n"
++	"	    subl $2, %%ecx		# Alignment uses up two bytes.\n"
++	"	    jae 1f			# Jump if we had at least two bytes.\n"
++	"	    addl $2, %%ecx		# ecx was < 2.  Deal with it.\n"
++	"	    jmp 4f\n"
++	"1:	    movw (%%esi), %%bx\n"
++	"	    addl $2, %%esi\n"
++	"	    addw %%bx, %%ax\n"
++	"	    adcl $0, %%eax\n"
++	"2:\n"
++	"	    movl %%ecx, %%edx\n"
++	"	    shrl $5, %%ecx\n"
++	"	    jz 2f\n"
++	"	    testl %%esi, %%esi\n"
++	"1:	    movl (%%esi), %%ebx\n"
++	"	    adcl %%ebx, %%eax\n"
++	"	    movl 4(%%esi), %%ebx\n"
++	"	    adcl %%ebx, %%eax\n"
++	"	    movl 8(%%esi), %%ebx\n"
++	"	    adcl %%ebx, %%eax\n"
++	"	    movl 12(%%esi), %%ebx\n"
++	"	    adcl %%ebx, %%eax\n"
++	"	    movl 16(%%esi), %%ebx\n"
++	"	    adcl %%ebx, %%eax\n"
++	"	    movl 20(%%esi), %%ebx\n"
++	"	    adcl %%ebx, %%eax\n"
++	"	    movl 24(%%esi), %%ebx\n"
++	"	    adcl %%ebx, %%eax\n"
++	"	    movl 28(%%esi), %%ebx\n"
++	"	    adcl %%ebx, %%eax\n"
++	"	    lea 32(%%esi), %%esi\n"
++	"	    dec %%ecx\n"
++	"	    jne 1b\n"
++	"	    adcl $0, %%eax\n"
++	"2:	    movl %%edx, %%ecx\n"
++	"	    andl $0x1c, %%edx\n"
++	"	    je 4f\n"
++	"	    shrl $2, %%edx\n"
++	"	    testl %%esi, %%esi\n"
++	"3:	    adcl (%%esi), %%eax\n"
++	"	    lea 4(%%esi), %%esi\n"
++	"	    dec %%edx\n"
++	"	    jne 3b\n"
++	"	    adcl $0, %%eax\n"
++	"4:	    andl $3, %%ecx\n"
++	"	    jz 7f\n"
++	"	    cmpl $2, %%ecx\n"
++	"	    jb 5f\n"
++	"	    movw (%%esi),%%cx\n"
++	"	    leal 2(%%esi),%%esi\n"
++	"	    je 6f\n"
++	"	    shll $16,%%ecx\n"
++	"5:	    movb (%%esi),%%cl\n"
++	"6:	    addl %%ecx,%%eax\n"
++	"	    adcl $0, %%eax\n"
++	"7:	    \n"
++	: "=&a"(sum), "=&c"(d0), "=&S"(d1), "=&d"(d2), "=&b"(d3)
++	: "0"(sum), "1"(len), "2"(buff)
++	: "memory");
+ 	return(sum);
+ }
+
+@@ -103,93 +104,94 @@
+
+ unsigned int csum_partial_copy_fromuser(const char *src, char *dst,
+ 				  int len, int sum) {
+-    __asm__("
+-	testl $2, %%edi		# Check alignment.
+-	jz 2f			# Jump if alignment is ok.
+-	subl $2, %%ecx		# Alignment uses up two bytes.
+-	jae 1f			# Jump if we had at least two bytes.
+-	addl $2, %%ecx		# ecx was < 2.  Deal with it.
+-	jmp 4f
+-1:	movw %%fs:(%%esi), %%bx
+-	addl $2, %%esi
+-	movw %%bx, (%%edi)
+-	addl $2, %%edi
+-	addw %%bx, %%ax
+-	adcl $0, %%eax
+-2:
+-	movl %%ecx, %%edx
+-	shrl $5, %%ecx
+-	jz 2f
+-	testl %%esi, %%esi
+-1:	movl %%fs:(%%esi), %%ebx
+-	adcl %%ebx, %%eax
+-	movl %%ebx, (%%edi)
+-
+-	movl %%fs:4(%%esi), %%ebx
+-	adcl %%ebx, %%eax
+-	movl %%ebx, 4(%%edi)
+-
+-	movl %%fs:8(%%esi), %%ebx
+-	adcl %%ebx, %%eax
+-	movl %%ebx, 8(%%edi)
+-
+-	movl %%fs:12(%%esi), %%ebx
+-	adcl %%ebx, %%eax
+-	movl %%ebx, 12(%%edi)
+-
+-	movl %%fs:16(%%esi), %%ebx
+-	adcl %%ebx, %%eax
+-	movl %%ebx, 16(%%edi)
+-
+-	movl %%fs:20(%%esi), %%ebx
+-	adcl %%ebx, %%eax
+-	movl %%ebx, 20(%%edi)
+-
+-	movl %%fs:24(%%esi), %%ebx
+-	adcl %%ebx, %%eax
+-	movl %%ebx, 24(%%edi)
+-
+-	movl %%fs:28(%%esi), %%ebx
+-	adcl %%ebx, %%eax
+-	movl %%ebx, 28(%%edi)
+-
+-	lea 32(%%esi), %%esi
+-	lea 32(%%edi), %%edi
+-	dec %%ecx
+-	jne 1b
+-	adcl $0, %%eax
+-2:	movl %%edx, %%ecx
+-	andl $28, %%edx
+-	je 4f
+-	shrl $2, %%edx
+-	testl %%esi, %%esi
+-3:	movl %%fs:(%%esi), %%ebx
+-	adcl %%ebx, %%eax
+-	movl %%ebx, (%%edi)
+-	lea 4(%%esi), %%esi
+-	lea 4(%%edi), %%edi
+-	dec %%edx
+-	jne 3b
+-	adcl $0, %%eax
+-4:	andl $3, %%ecx
+-	jz 7f
+-	cmpl $2, %%ecx
+-	jb 5f
+-	movw %%fs:(%%esi), %%cx
+-	leal 2(%%esi), %%esi
+-	movw %%cx, (%%edi)
+-	leal 2(%%edi), %%edi
+-	je 6f
+-	shll $16,%%ecx
+-5:	movb %%fs:(%%esi), %%cl
+-	movb %%cl, (%%edi)
+-6:	addl %%ecx, %%eax
+-	adcl $0, %%eax
+-7:
+-	"
+-	: "=a" (sum)
+-	: "0"(sum), "c"(len), "S"(src), "D" (dst)
+-	: "bx", "cx", "dx", "si", "di" );
++    unsigned long d0, d1, d2, d3;
++    __asm__(
++	"	testl $2, %%edi		# Check alignment.\n"
++	"	jz 2f			# Jump if alignment is ok.\n"
++	"	subl $2, %%ecx		# Alignment uses up two bytes.\n"
++	"	jae 1f			# Jump if we had at least two bytes.\n"
++	"	addl $2, %%ecx		# ecx was < 2.  Deal with it.\n"
++	"	jmp 4f\n"
++	"1:	movw %%fs:(%%esi), %%bx\n"
++	"	addl $2, %%esi\n"
++	"	movw %%bx, (%%edi)\n"
++	"	addl $2, %%edi\n"
++	"	addw %%bx, %%ax\n"
++	"	adcl $0, %%eax\n"
++	"2:\n"
++	"	movl %%ecx, %%edx\n"
++	"	shrl $5, %%ecx\n"
++	"	jz 2f\n"
++	"	testl %%esi, %%esi\n"
++	"1:	movl %%fs:(%%esi), %%ebx\n"
++	"	adcl %%ebx, %%eax\n"
++	"	movl %%ebx, (%%edi)\n"
++	"\n"
++	"	movl %%fs:4(%%esi), %%ebx\n"
++	"	adcl %%ebx, %%eax\n"
++	"	movl %%ebx, 4(%%edi)\n"
++	"\n"
++	"	movl %%fs:8(%%esi), %%ebx\n"
++	"	adcl %%ebx, %%eax\n"
++	"	movl %%ebx, 8(%%edi)\n"
++	"\n"
++	"	movl %%fs:12(%%esi), %%ebx\n"
++	"	adcl %%ebx, %%eax\n"
++	"	movl %%ebx, 12(%%edi)\n"
++	"\n"
++	"	movl %%fs:16(%%esi), %%ebx\n"
++	"	adcl %%ebx, %%eax\n"
++	"	movl %%ebx, 16(%%edi)\n"
++	"\n"
++	"	movl %%fs:20(%%esi), %%ebx\n"
++	"	adcl %%ebx, %%eax\n"
++	"	movl %%ebx, 20(%%edi)\n"
++	"\n"
++	"	movl %%fs:24(%%esi), %%ebx\n"
++	"	adcl %%ebx, %%eax\n"
++	"	movl %%ebx, 24(%%edi)\n"
++	"\n"
++	"	movl %%fs:28(%%esi), %%ebx\n"
++	"	adcl %%ebx, %%eax\n"
++	"	movl %%ebx, 28(%%edi)\n"
++	"\n"
++	"	lea 32(%%esi), %%esi\n"
++	"	lea 32(%%edi), %%edi\n"
++	"	dec %%ecx\n"
++	"	jne 1b\n"
++	"	adcl $0, %%eax\n"
++	"2:	movl %%edx, %%ecx\n"
++	"	andl $28, %%edx\n"
++	"	je 4f\n"
++	"	shrl $2, %%edx\n"
++	"	testl %%esi, %%esi\n"
++	"3:	movl %%fs:(%%esi), %%ebx\n"
++	"	adcl %%ebx, %%eax\n"
++	"	movl %%ebx, (%%edi)\n"
++	"	lea 4(%%esi), %%esi\n"
++	"	lea 4(%%edi), %%edi\n"
++	"	dec %%edx\n"
++	"	jne 3b\n"
++	"	adcl $0, %%eax\n"
++	"4:	andl $3, %%ecx\n"
++	"	jz 7f\n"
++	"	cmpl $2, %%ecx\n"
++	"	jb 5f\n"
++	"	movw %%fs:(%%esi), %%cx\n"
++	"	leal 2(%%esi), %%esi\n"
++	"	movw %%cx, (%%edi)\n"
++	"	leal 2(%%edi), %%edi\n"
++	"	je 6f\n"
++	"	shll $16,%%ecx\n"
++	"5:	movb %%fs:(%%esi), %%cl\n"
++	"	movb %%cl, (%%edi)\n"
++	"6:	addl %%ecx, %%eax\n"
++	"	adcl $0, %%eax\n"
++	"7:\n"
++	"	\n"
++	: "=&a" (sum), "=&c" (d0), "=&S" (d1), "=&D" (d2), "=&d" (d3)
++	: "0"(sum), "1"(len), "2"(src), "3"(dst)
++	: "bx", "memory" );
+     return(sum);
+ }
+ /*
+@@ -198,92 +200,93 @@
+
+ unsigned int csum_partial_copy(const char *src, char *dst,
+ 				  int len, int sum) {
+-    __asm__("
+-	testl $2, %%edi		# Check alignment.
+-	jz 2f			# Jump if alignment is ok.
+-	subl $2, %%ecx		# Alignment uses up two bytes.
+-	jae 1f			# Jump if we had at least two bytes.
+-	addl $2, %%ecx		# ecx was < 2.  Deal with it.
+-	jmp 4f
+-1:	movw (%%esi), %%bx
+-	addl $2, %%esi
+-	movw %%bx, (%%edi)
+-	addl $2, %%edi
+-	addw %%bx, %%ax
+-	adcl $0, %%eax
+-2:
+-	movl %%ecx, %%edx
+-	shrl $5, %%ecx
+-	jz 2f
+-	testl %%esi, %%esi
+-1:	movl (%%esi), %%ebx
+-	adcl %%ebx, %%eax
+-	movl %%ebx, (%%edi)
+-
+-	movl 4(%%esi), %%ebx
+-	adcl %%ebx, %%eax
+-	movl %%ebx, 4(%%edi)
+-
+-	movl 8(%%esi), %%ebx
+-	adcl %%ebx, %%eax
+-	movl %%ebx, 8(%%edi)
+-
+-	movl 12(%%esi), %%ebx
+-	adcl %%ebx, %%eax
+-	movl %%ebx, 12(%%edi)
+-
+-	movl 16(%%esi), %%ebx
+-	adcl %%ebx, %%eax
+-	movl %%ebx, 16(%%edi)
+-
+-	movl 20(%%esi), %%ebx
+-	adcl %%ebx, %%eax
+-	movl %%ebx, 20(%%edi)
+-
+-	movl 24(%%esi), %%ebx
+-	adcl %%ebx, %%eax
+-	movl %%ebx, 24(%%edi)
+-
+-	movl 28(%%esi), %%ebx
+-	adcl %%ebx, %%eax
+-	movl %%ebx, 28(%%edi)
+-
+-	lea 32(%%esi), %%esi
+-	lea 32(%%edi), %%edi
+-	dec %%ecx
+-	jne 1b
+-	adcl $0, %%eax
+-2:	movl %%edx, %%ecx
+-	andl $28, %%edx
+-	je 4f
+-	shrl $2, %%edx
+-	testl %%esi, %%esi
+-3:	movl (%%esi), %%ebx
+-	adcl %%ebx, %%eax
+-	movl %%ebx, (%%edi)
+-	lea 4(%%esi), %%esi
+-	lea 4(%%edi), %%edi
+-	dec %%edx
+-	jne 3b
+-	adcl $0, %%eax
+-4:	andl $3, %%ecx
+-	jz 7f
+-	cmpl $2, %%ecx
+-	jb 5f
+-	movw (%%esi), %%cx
+-	leal 2(%%esi), %%esi
+-	movw %%cx, (%%edi)
+-	leal 2(%%edi), %%edi
+-	je 6f
+-	shll $16,%%ecx
+-5:	movb (%%esi), %%cl
+-	movb %%cl, (%%edi)
+-6:	addl %%ecx, %%eax
+-	adcl $0, %%eax
+-7:
+-	"
+-	: "=a" (sum)
+-	: "0"(sum), "c"(len), "S"(src), "D" (dst)
+-	: "bx", "cx", "dx", "si", "di" );
++    unsigned long d0, d1, d2, d3;
++    __asm__(
++	"	testl $2, %%edi		# Check alignment.\n"
++	"	jz 2f			# Jump if alignment is ok.\n"
++	"	subl $2, %%ecx		# Alignment uses up two bytes.\n"
++	"	jae 1f			# Jump if we had at least two bytes.\n"
++	"	addl $2, %%ecx		# ecx was < 2.  Deal with it.\n"
++	"	jmp 4f\n"
++	"1:	movw (%%esi), %%bx\n"
++	"	addl $2, %%esi\n"
++	"	movw %%bx, (%%edi)\n"
++	"	addl $2, %%edi\n"
++	"	addw %%bx, %%ax\n"
++	"	adcl $0, %%eax\n"
++	"2:\n"
++	"	movl %%ecx, %%edx\n"
++	"	shrl $5, %%ecx\n"
++	"	jz 2f\n"
++	"	testl %%esi, %%esi\n"
++	"1:	movl (%%esi), %%ebx\n"
++	"	adcl %%ebx, %%eax\n"
++	"	movl %%ebx, (%%edi)\n"
++	"\n"
++	"	movl 4(%%esi), %%ebx\n"
++	"	adcl %%ebx, %%eax\n"
++	"	movl %%ebx, 4(%%edi)\n"
++	"\n"
++	"	movl 8(%%esi), %%ebx\n"
++	"	adcl %%ebx, %%eax\n"
++	"	movl %%ebx, 8(%%edi)\n"
++	"\n"
++	"	movl 12(%%esi), %%ebx\n"
++	"	adcl %%ebx, %%eax\n"
++	"	movl %%ebx, 12(%%edi)\n"
++	"\n"
++	"	movl 16(%%esi), %%ebx\n"
++	"	adcl %%ebx, %%eax\n"
++	"	movl %%ebx, 16(%%edi)\n"
++	"\n"
++	"	movl 20(%%esi), %%ebx\n"
++	"	adcl %%ebx, %%eax\n"
++	"	movl %%ebx, 20(%%edi)\n"
++	"\n"
++	"	movl 24(%%esi), %%ebx\n"
++	"	adcl %%ebx, %%eax\n"
++	"	movl %%ebx, 24(%%edi)\n"
++	"\n"
++	"	movl 28(%%esi), %%ebx\n"
++	"	adcl %%ebx, %%eax\n"
++	"	movl %%ebx, 28(%%edi)\n"
++	"\n"
++	"	lea 32(%%esi), %%esi\n"
++	"	lea 32(%%edi), %%edi\n"
++	"	dec %%ecx\n"
++	"	jne 1b\n"
++	"	adcl $0, %%eax\n"
++	"2:	movl %%edx, %%ecx\n"
++	"	andl $28, %%edx\n"
++	"	je 4f\n"
++	"	shrl $2, %%edx\n"
++	"	testl %%esi, %%esi\n"
++	"3:	movl (%%esi), %%ebx\n"
++	"	adcl %%ebx, %%eax\n"
++	"	movl %%ebx, (%%edi)\n"
++	"	lea 4(%%esi), %%esi\n"
++	"	lea 4(%%edi), %%edi\n"
++	"	dec %%edx\n"
++	"	jne 3b\n"
++	"	adcl $0, %%eax\n"
++	"4:	andl $3, %%ecx\n"
++	"	jz 7f\n"
++	"	cmpl $2, %%ecx\n"
++	"	jb 5f\n"
++	"	movw (%%esi), %%cx\n"
++	"	leal 2(%%esi), %%esi\n"
++	"	movw %%cx, (%%edi)\n"
++	"	leal 2(%%edi), %%edi\n"
++	"	je 6f\n"
++	"	shll $16,%%ecx\n"
++	"5:	movb (%%esi), %%cl\n"
++	"	movb %%cl, (%%edi)\n"
++	"6:	addl %%ecx, %%eax\n"
++	"	adcl $0, %%eax\n"
++	"7:\n"
++	"	\n"
++	: "=&a" (sum), "=&c" (d0), "=&S" (d1), "=&D" (d2), "=&d" (d3)
++	: "0"(sum), "1"(len), "2"(src), "3"(dst)
++	: "bx", "memory" );
+     return(sum);
+ }
+--- a/arch/i386/boot/compressed/Makefile
++++ b/arch/i386/boot/compressed/Makefile
+@@ -46,20 +46,12 @@
+ # You cannot compress a file and have the kernel uncompress it, it must
+ # be stdin
+ piggy.o:	$(SYSTEM)
+-	tmppiggy=/tmp/$$$$piggy; \
++	tmppiggy=_tmp_$$$$piggy; \
+ 	rm -f $$tmppiggy $$tmppiggy.gz $$tmppiggy.lnk; \
+-	if hash $(ENCAPS) 2> /dev/null; then \
+-	  $(OBJDUMP) $(OBJDUMP_FLAGS) -o $(IMAGE_OFFSET) $(SYSTEM) > $$tmppiggy; \
+-	else \
+-	  $(OBJCOPY) $(SYSTEM) $$tmppiggy; \
+-	fi; \
++	$(OBJCOPY) $(SYSTEM) $$tmppiggy; \
+ 	gzip -f -9 < $$tmppiggy > $$tmppiggy.gz; \
+-	if hash $(ENCAPS) 2> /dev/null; then \
+-	  $(ENCAPS) $(TARGET) piggy.o $$tmppiggy.gz $(INPUT_DATA) $(INPUT_LEN); \
+-	else \
+-	  echo "SECTIONS { .data : { input_len = .; LONG(input_data_end - input_data) input_data = .; *(.data) input_data_end = .; }}" > $$tmppiggy.lnk; \
+-	  $(LD) -m elf_i386 -r -o piggy.o -b binary $$tmppiggy.gz -b elf32-i386 -T $$tmppiggy.lnk; \
+-	fi; \
++	echo "SECTIONS { .data : { input_len = .; LONG(input_data_end - input_data) input_data = .; *(.data) input_data_end = .; }}" > $$tmppiggy.lnk; \
++	$(LD) -m elf_i386 -r -o piggy.o -b binary $$tmppiggy.gz -b elf32-i386 -T $$tmppiggy.lnk; \
+ 	rm -f $$tmppiggy $$tmppiggy.gz $$tmppiggy.lnk
+ else
+
+--- a/arch/i386/boot/Makefile
++++ b/arch/i386/boot/Makefile
+@@ -17,29 +17,13 @@
+ endif
+
+ zImage: $(CONFIGURE) bootsect setup compressed/vmlinux tools/build
+-ifdef CONFIG_KERNEL_ELF
+-	if hash $(ENCAPS) 2> /dev/null; then \
+-	  $(OBJDUMP) $(OBJDUMP_FLAGS) -o $(ZIMAGE_OFFSET) compressed/vmlinux > compressed/vmlinux.out; \
+-	else \
+-	  $(OBJCOPY) compressed/vmlinux compressed/vmlinux.out; \
+-	fi
++	$(OBJCOPY) compressed/vmlinux compressed/vmlinux.out
+ 	tools/build bootsect setup compressed/vmlinux.out $(ROOT_DEV) > zImage
+-else
+-	tools/build bootsect setup compressed/vmlinux $(ROOT_DEV) > zImage
+-endif
+ 	sync
+
+ bzImage: $(CONFIGURE) bbootsect setup compressed/bvmlinux tools/bbuild
+-ifdef CONFIG_KERNEL_ELF
+-	if hash $(ENCAPS) 2> /dev/null; then \
+-	  $(OBJDUMP) $(OBJDUMP_FLAGS) -o $(IMAGE_OFFSET) compressed/bvmlinux > compressed/bvmlinux.out; \
+-	else \
+-	  $(OBJCOPY) compressed/bvmlinux compressed/bvmlinux.out; \
+-	fi
++	$(OBJCOPY) compressed/bvmlinux compressed/bvmlinux.out
+ 	tools/bbuild bbootsect setup compressed/bvmlinux.out $(ROOT_DEV) > bzImage
+-else
+-	tools/bbuild bbootsect setup compressed/bvmlinux $(ROOT_DEV) > bzImage
+-endif
+ 	sync
+
+ compressed/vmlinux: $(TOPDIR)/vmlinux
+@@ -62,10 +46,10 @@
+ 	sh ./install.sh $(VERSION).$(PATCHLEVEL).$(SUBLEVEL) zImage $(TOPDIR)/System.map "$(INSTALL_PATH)"
+
+ tools/build: tools/build.c
+-	$(HOSTCC) $(HOSTCFLAGS) -o $@ $< -I$(TOPDIR)/include
++	$(HOSTCC) $(HOSTCFLAGS) -D__BFD__ -o $@ $< -I$(TOPDIR)/include
+
+ tools/bbuild: tools/build.c
+-	$(HOSTCC) $(HOSTCFLAGS) -D__BIG_KERNEL__ -o $@ $< -I$(TOPDIR)/include
++	$(HOSTCC) $(HOSTCFLAGS) -D__BFD__ -D__BIG_KERNEL__ -o $@ $< -I$(TOPDIR)/include
+
+ setup: setup.o
+ 	$(LD86) -s -o $@ $<
+--- a/arch/i386/boot/tools/build.c
++++ b/arch/i386/boot/tools/build.c
+@@ -25,6 +25,7 @@
+ #include <stdio.h>	/* fprintf */
+ #include <string.h>
+ #include <stdlib.h>	/* contains exit */
++#include <stdint.h>
+ #include <sys/types.h>	/* unistd.h needs this */
+ #include <sys/stat.h>
+ #include <sys/sysmacros.h>
+@@ -59,12 +60,12 @@
+
+ typedef union {
+ 	int i;
+-	long l;
++	uint32_t l;
+ 	short s[2];
+ 	char b[4];
+ } conv;
+
+-long intel_long(long l)
++uint32_t intel_long(uint32_t l)
+ {
+ 	conv t;
+
+@@ -109,7 +110,7 @@
+ int main(int argc, char ** argv)
+ {
+ 	int i,c,id,sz,tmp_int;
+-	unsigned long sys_size, tmp_long;
++	uint32_t sys_size, tmp_long;
+ 	char buf[1024];
+ #ifndef __BFD__
+ 	struct exec *ex = (struct exec *)buf;
+@@ -149,17 +150,17 @@
+ 		die("Unable to open 'boot'");
+ 	if (read(id,buf,MINIX_HEADER) != MINIX_HEADER)
+ 		die("Unable to read header of 'boot'");
+-	if (((long *) buf)[0]!=intel_long(0x04100301))
++	if (((uint32_t *) buf)[0]!=intel_long(0x04100301))
+ 		die("Non-Minix header of 'boot'");
+-	if (((long *) buf)[1]!=intel_long(MINIX_HEADER))
++	if (((uint32_t *) buf)[1]!=intel_long(MINIX_HEADER))
+ 		die("Non-Minix header of 'boot'");
+-	if (((long *) buf)[3] != 0)
++	if (((uint32_t *) buf)[3] != 0)
+ 		die("Illegal data segment in 'boot'");
+-	if (((long *) buf)[4] != 0)
++	if (((uint32_t *) buf)[4] != 0)
+ 		die("Illegal bss in 'boot'");
+-	if (((long *) buf)[5] != 0)
++	if (((uint32_t *) buf)[5] != 0)
+ 		die("Non-Minix header of 'boot'");
+-	if (((long *) buf)[7] != 0)
++	if (((uint32_t *) buf)[7] != 0)
+ 		die("Illegal symbol table in 'boot'");
+ 	i=read(id,buf,sizeof buf);
+ 	fprintf(stderr,"Boot sector %d bytes.\n",i);
+@@ -178,17 +179,17 @@
+ 		die("Unable to open 'setup'");
+ 	if (read(id,buf,MINIX_HEADER) != MINIX_HEADER)
+ 		die("Unable to read header of 'setup'");
+-	if (((long *) buf)[0]!=intel_long(0x04100301))
++	if (((uint32_t *) buf)[0]!=intel_long(0x04100301))
+ 		die("Non-Minix header of 'setup'");
+-	if (((long *) buf)[1]!=intel_long(MINIX_HEADER))
++	if (((uint32_t *) buf)[1]!=intel_long(MINIX_HEADER))
+ 		die("Non-Minix header of 'setup'");
+-	if (((long *) buf)[3] != 0)
++	if (((uint32_t *) buf)[3] != 0)
+ 		die("Illegal data segment in 'setup'");
+-	if (((long *) buf)[4] != 0)
++	if (((uint32_t *) buf)[4] != 0)
+ 		die("Illegal bss in 'setup'");
+-	if (((long *) buf)[5] != 0)
++	if (((uint32_t *) buf)[5] != 0)
+ 		die("Non-Minix header of 'setup'");
+-	if (((long *) buf)[7] != 0)
++	if (((uint32_t *) buf)[7] != 0)
+ 		die("Illegal symbol table in 'setup'");
+ 	for (i=0 ; (c=read(id,buf,sizeof buf))>0 ; i+=c )
+ #ifdef __BIG_KERNEL__
+@@ -196,7 +197,7 @@
+ 		if (!i) {
+ 			/* Working with memcpy because of alignment constraints
+ 			   on Sparc - Gertjan */
+-			memcpy(&tmp_long, &buf[2], sizeof(long));
++			memcpy(&tmp_long, &buf[2], sizeof(tmp_long));
+ 			if (tmp_long != intel_long(0x53726448) )
+ 				die("Wrong magic in loader header of 'setup'");
+ 			memcpy(&tmp_int, &buf[6], sizeof(int));
+@@ -204,7 +205,7 @@
+ 				die("Wrong version of loader header of 'setup'");
+ 			buf[0x11] = 1; /* LOADED_HIGH */
+ 			tmp_long = intel_long(0x100000);
+-			memcpy(&buf[0x14], &tmp_long, sizeof(long));  /* code32_start */
++			memcpy(&buf[0x14], &tmp_long, sizeof(tmp_long));  /* code32_start */
+ 		}
+ #endif
+ 		if (write(1,buf,c)!=c)
+--- a/drivers/char/tty_io.c
++++ b/drivers/char/tty_io.c
+@@ -86,7 +86,10 @@
+ #undef TTY_DEBUG_HANGUP
+
+ #define TTY_PARANOIA_CHECK
+-#define CHECK_TTY_COUNT
++/*
++ * KLab: this debug-only global file-list walk faults during the first
++ * userspace console open when Linux 2.0 is built with the sealed GCC 3.3.6.
++ */
+
+ extern void do_blank_screen(int nopowersave);
+ extern void set_vesa_blanking(const unsigned long arg);
+--- a/Makefile
++++ b/Makefile
+@@ -91,7 +91,7 @@
+ # standard CFLAGS
+ #
+
+-CFLAGS = -Wall -Wstrict-prototypes -O2 -fomit-frame-pointer -fno-strength-reduce
++CFLAGS = -Wall -Wstrict-prototypes -O2 -fomit-frame-pointer -fno-strength-reduce -fno-strict-aliasing
+
+ ifdef CONFIG_CPP
+ CFLAGS := $(CFLAGS) -x c++
+--- a/fs/file_table.c
++++ b/fs/file_table.c
+@@ -90,10 +90,15 @@
+
+ 	nr_files += i = PAGE_SIZE/sizeof(struct file);
+
+-	if (!first_file)
+-		file->f_count = 0,
+-		file->f_next = file->f_prev = first_file = file++,
++	if (!first_file) {
++		/* KLab: sequence this old comma expression for GCC 3.x. */
++		file->f_count = 0;
++		file->f_next = file;
++		file->f_prev = file;
++		first_file = file;
++		file++;
+ 		i--;
++	}
+
+ 	for (; i ; i--)
+ 		insert_file_free(file++);
+--- a/fs/inode.c
++++ b/fs/inode.c
+@@ -122,8 +122,14 @@
+ 	nr_inodes += i;
+ 	nr_free_inodes += i;
+
+-	if (!first_inode)
+-		inode->i_next = inode->i_prev = first_inode = inode++, i--;
++	if (!first_inode) {
++		/* KLab: sequence this old comma expression for GCC 3.x. */
++		inode->i_next = inode;
++		inode->i_prev = inode;
++		first_inode = inode;
++		inode++;
++		i--;
++	}
+
+ 	for ( ; i ; i-- )
+ 		insert_inode_free(inode++);

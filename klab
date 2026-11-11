@@ -1,0 +1,94 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+KLAB_SELF_DIR="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)"
+# setup may select the root before the root contract is loaded.
+if [[ "${1:-}" == setup ]]; then
+  shift
+  _args=("$@"); _i=0
+  while ((_i < ${#_args[@]})); do
+    if [[ "${_args[_i]}" == --root ]]; then
+      ((_i + 1 < ${#_args[@]})) || { echo 'klab: --root needs a directory' >&2; exit 2; }
+      export KLAB_ROOT="${_args[_i+1]}"; break
+    fi
+    ((_i+=1))
+  done
+  set -- setup "${_args[@]}"
+fi
+source "$KLAB_SELF_DIR/lib/klab-root.sh"
+klab_root_ensure_layout
+KLAB_RUNNER="${KLAB_RUNNER:-$KLAB_SELF_DIR/kernel-lab.sh}"
+[[ -x "$KLAB_RUNNER" ]] || { echo "klab: kernel-lab.sh not found/executable at $KLAB_RUNNER" >&2; exit 127; }
+source "$KLAB_SELF_DIR/lib/simple-cli.sh"
+source "$KLAB_SELF_DIR/lib/controller-test.sh"
+if [[ "${KLAB_TEST_MODE:-}" == controller ]]; then
+  klab_test_api "$@"
+  exit $?
+fi
+case "${1:-}" in
+  setup) shift; klab_simple_setup "$@" ;;
+  pull) shift; klab_simple_pull "$@" ;;
+  load) shift; klab_simple_load "$@" ;;
+  build)
+    shift
+    if { printf '%s\n' "$@" | grep -qx -- '--module'; } || { (($# >= 2)) && [[ "$1" == *:* && "$2" != -* ]]; }; then
+      klab_simple_build "$@"
+    else
+      exec "$KLAB_RUNNER" build "$@"
+    fi
+    ;;
+  build-user) shift; klab_simple_build_user "$@" ;;
+  validate) shift; exec "$KLAB_SELF_DIR/klab-image-validate.sh" "$@" ;;
+  targets) shift; "$KLAB_RUNNER" targets "$@"; printf '%s\n' '# BSD simple targets'; "$(klab_simple_bsd_helper)" list ;;
+  run) shift; klab_simple_run "$@" ;;
+  start) shift; klab_simple_start "$@" ;;
+  ps) shift; exec "$KLAB_RUNNER" sessions "$@" ;;
+  shell) shift; exec "$KLAB_RUNNER" ssh "$@" ;;
+  suite) shift; klab_simple_suite "$@" ;;
+  export)
+    shift
+    case "${1:-}" in
+      container) shift; exec "$KLAB_SELF_DIR/klab-container-export.sh" "$@" ;;
+      *) echo 'klab: usage: klab export container --target TARGET[@ARCH] ...' >&2; exit 2 ;;
+    esac
+    ;;
+  serve) shift; exec python3 "$KLAB_SELF_DIR/tools/klab-serve.py" --root "$KLAB_ROOT" --repo "$(klab_simple_repo)" "$@" ;;
+  test) shift; klab_controller_test "$@" ;;
+  repo) shift; klab_simple_repo_cmd "$@" ;;
+  legacy) shift; klab_simple_legacy "$@" ;;
+  bsd) shift; klab_simple_bsd "$@" ;;
+  advanced) shift; exec "$KLAB_RUNNER" "$@" ;;
+  help-simple|'') cat <<'USAGE'
+KLab simple commands:
+  klab setup [--root DIR] [--repo DIR]
+  klab pull TARGET [--arch ARCH]
+  klab load [FILE.klab|REPOSITORY]
+  klab build TARGET MODULE_DIR [--arch ARCH] [-o DIR]
+  klab build-user TARGET SOURCE.c [--arch ARCH] [-o FILE]
+  klab validate TARGET [--arch ARCH] [--level quick|standard|full]
+  klab run TARGET [--arch ARCH]
+  klab run BSD_TARGET [--mode minimal|ssh|full]
+  klab run TARGET --suite NAME [--arch ARCH]
+  klab start TARGET [--name SESSION] [--arch ARCH] [boot options]
+  klab ps
+  klab exec SESSION COMMAND
+  klab push SESSION LOCAL [REMOTE]
+  klab shell SESSION
+  klab stop SESSION
+  klab suite create NAME
+  klab suite <list|show|run|queue|migrate> ...
+  klab export container --target TARGET[@ARCH] [--target ...] [--profile userspace|build|full]
+  klab serve [--bind ADDRESS] [--port PORT] [--upload-token-file FILE]
+  klab test SUITE on TARGET@ARCH [TARGET@ARCH ...]
+  klab repo <path|list|index|snapshot|export-release|apply-release|releases|volume-add|volumes|stage|cache-status|cache-prune>
+  klab legacy <list|plan ID>
+  klab bsd <list|status>
+
+BSD expansion examples:
+  klab pull freebsd:14.5-RELEASE:riscv64
+  klab run freebsd:14.5-RELEASE:riscv64
+
+Advanced commands remain available through the same executable; run `klab help`.
+USAGE
+    ;;
+  *) exec "$KLAB_RUNNER" "$@" ;;
+esac

@@ -1,0 +1,20 @@
+KLab R12 first-pass validation — 2026-09-22
+
+PASS: shell syntax for core/provider/backend scripts
+PASS: Python bytecode compilation for lib/*.py
+PASS: vintage-relocation-validation.sh
+PASS: vintage-pretransfer-gate.sh
+PASS: distro-toolchain-artifact.sh
+PASS: distro-toolchain-wiring.sh
+PASS: buildenv-capture-pair.sh
+PASS: combined-chain-audit.sh
+PASS: provider-contract.sh
+PASS: directory-import-order.sh (including distro toolchain ordering)
+PASS: toolchain-boundary.sh
+PASS: toolchain-nearest-fallback.sh
+PASS: previously run network-free regression batches retained PASS through tested set
+
+NOT TESTED: live APT distro-toolchain capture
+NOT TESTED: live DNF/yum distro-toolchain capture
+NOT IMPLEMENTED YET: normal prepare/offline build execution using distro-native toolchain artifact
+NOT RETESTED YET: QEMU module insertion after distro-native toolchain binding

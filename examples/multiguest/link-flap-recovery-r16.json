@@ -1,0 +1,127 @@
+{
+  "schema": "klab-multiguest-scenario-v2",
+  "timeout_seconds": 60,
+  "networks": [
+    {
+      "id": "lan-a",
+      "cidr": "10.77.30.0/24",
+      "capture": true
+    },
+    {
+      "id": "lan-b",
+      "cidr": "10.77.40.0/24",
+      "capture": true,
+      "delay_us": 5000
+    }
+  ],
+  "guests": [
+    {
+      "id": "server",
+      "target": "upstream:v6.6",
+      "arch": "x86_64",
+      "interfaces": [
+        {
+          "id": "net0",
+          "network": "lan-a",
+          "ip": "10.77.30.11/24"
+        }
+      ],
+      "routes": [
+        {
+          "to": "10.77.40.0/24",
+          "via": "10.77.30.1"
+        }
+      ],
+      "builds": [
+        {
+          "id": "netpair",
+          "source": "../network-pair.c",
+          "remote": "/tmp/netpair",
+          "static": true
+        }
+      ],
+      "processes": [
+        {
+          "id": "server",
+          "command": "/tmp/netpair server 24002 1",
+          "ready": {
+            "stdout": "SERVER_READY"
+          },
+          "expected_exit": 0
+        }
+      ]
+    },
+    {
+      "id": "router",
+      "target": "upstream:v6.6",
+      "arch": "x86_64",
+      "forward_ipv4": true,
+      "interfaces": [
+        {
+          "id": "left",
+          "network": "lan-a",
+          "ip": "10.77.30.1/24"
+        },
+        {
+          "id": "right",
+          "network": "lan-b",
+          "ip": "10.77.40.1/24"
+        }
+      ]
+    },
+    {
+      "id": "client",
+      "target": "upstream:v6.6",
+      "arch": "x86_64",
+      "interfaces": [
+        {
+          "id": "net0",
+          "network": "lan-b",
+          "ip": "10.77.40.11/24"
+        }
+      ],
+      "routes": [
+        {
+          "to": "10.77.30.0/24",
+          "via": "10.77.40.1"
+        }
+      ],
+      "builds": [
+        {
+          "id": "netpair",
+          "source": "../network-pair.c",
+          "remote": "/tmp/netpair",
+          "static": true
+        }
+      ],
+      "processes": [
+        {
+          "id": "client",
+          "command": "sleep 0.20; /tmp/netpair client 10.77.30.11 24002 recovered-after-flap",
+          "expected_exit": 0,
+          "depends_on": [
+            {
+              "guest": "server",
+              "process": "server",
+              "state": "ready"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "actions": [
+    {
+      "id": "client-link-flap",
+      "type": "link-flap",
+      "guest": "client",
+      "interface": "net0",
+      "down_ms": 800,
+      "after": {
+        "guest": "client",
+        "process": "client",
+        "state": "started"
+      }
+    }
+  ]
+}

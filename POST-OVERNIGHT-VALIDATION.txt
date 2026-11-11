@@ -1,0 +1,41 @@
+KLab post-overnight integration validation
+Date: 2026-09-22 HST
+Base: Overnight Pass 01 / hardened M2
+
+Integrated findings:
+  F01-F15: fixed
+  F16: OPEN - complete dependency archive/repository provenance
+  F17-F18: fixed
+
+New/expanded regression coverage:
+  tests/overnight-hardening-02-09.sh
+  tests/buildenv-provenance-hardening.sh
+  buildenv artifact identity now covers installed package inventory
+  installed inventory post-import mutation is detected
+
+Validation performed:
+  Existing Pass 01 / hardened-M2 tests were run individually in batches.
+  All executed functional tests passed; aggregate execution is intentionally
+  split because the outer environment wall-clock limit can expire even while
+  individual tests remain within their per-test timeout.
+  New overnight-hardening regressions: PASS
+  New buildenv-provenance regressions: PASS
+  toolchain-boundary tests: PASS
+  installer smoke/wiring: PASS
+  shell syntax: PASS
+  Python bytecode compilation: PASS
+
+Buildenv format:
+  New artifacts: kernel-lab-buildenv format v2
+  Adds spec/installed-packages.tsv and installed_inventory_sha256.
+  v1 verification/import remains supported.
+
+Compatibility claims remain conservative:
+  stable distro provider target arches: x86_64
+  provider buildenv capture: same-architecture staging/execution
+  no general cross-architecture distro-provider claim yet
+
+Next material issue:
+  F16 - seal every package-manager build dependency as an immutable archive,
+  record its SHA-256 and repository/snapshot provenance, and construct the
+  buildenv only from that sealed closure.

@@ -1,0 +1,168 @@
+{
+  "schema": "klab-bsd-matrix-v1",
+  "release_gate": "1.0",
+  "levels": [
+    "MEDIA_VERIFIED",
+    "BOOT_PASS",
+    "USERSPACE_PASS",
+    "MODULE_PASS"
+  ],
+  "policy": {
+    "minimum_required": [
+      "freebsd-current-amd64",
+      "freebsd-current-aarch64",
+      "freebsd-previous-amd64",
+      "netbsd-current-amd64",
+      "netbsd-current-i386",
+      "openbsd-current-amd64",
+      "openbsd-current-arm64",
+      "dragonfly-current-x86_64"
+    ],
+    "notes": "MODULE_PASS is required only where the OS exposes a supported module workflow. OpenBSD targets intentionally stop at USERSPACE_PASS. DragonFly BSD currently publishes x86_64 release media only."
+  },
+  "targets": [
+    {
+      "id": "freebsd-current-amd64",
+      "target": "freebsd:15.1-RELEASE:x86_64",
+      "os": "freebsd",
+      "release": "15.1-RELEASE",
+      "arch": "x86_64",
+      "required_level": "MODULE_PASS",
+      "achieved_level": "MODULE_PASS",
+      "status": "pass",
+      "evidence": "/home/reed/klab-data/results/manual-r17.4-freebsd15.1-x86_64-attempt26/run.log"
+    },
+    {
+      "id": "freebsd-current-aarch64",
+      "target": "freebsd:15.1-RELEASE:aarch64",
+      "os": "freebsd",
+      "release": "15.1-RELEASE",
+      "arch": "aarch64",
+      "required_level": "MODULE_PASS",
+      "achieved_level": "MODULE_PASS",
+      "status": "pass",
+      "evidence": "/home/reed/Documents/ChatGPT/Klab/library/bsd-evidence/freebsd-15.1-arm64/qemu10-module-smoke.log",
+      "note": "Installed FreeBSD 15.1 arm64 booted under isolated QEMU 10.0.13, built the sample module from installed source, and loaded it successfully. Host QEMU 6.2 remains unsupported for this target because it panics during PSCI startup.",
+      "bundle_sha256": "eafeafd98915a0dc30d0a9dc4b405ddaf4613221bc73a77c4c991c35cf1d461b"
+    },
+    {
+      "id": "freebsd-previous-amd64",
+      "target": "freebsd:14.5-RELEASE:x86_64",
+      "os": "freebsd",
+      "release": "14.5-RELEASE",
+      "arch": "x86_64",
+      "required_level": "MODULE_PASS",
+      "achieved_level": "MODULE_PASS",
+      "status": "pass",
+      "bundle_sha256": "01fe049454c0d3dbc8586fe6031212d358fbfbb2127566274f33abb8b0ab9b76",
+      "evidence": "/home/reed/Documents/ChatGPT/Klab/library/bsd-evidence/freebsd-14.5-amd64/smoke.log"
+    },
+    {
+      "id": "freebsd-previous-i386",
+      "target": "freebsd:14.5-RELEASE:i386",
+      "os": "freebsd",
+      "release": "14.5-RELEASE",
+      "arch": "i386",
+      "required_level": "USERSPACE_PASS",
+      "achieved_level": "USERSPACE_PASS",
+      "status": "pass",
+      "note": "Official qcow2 SHA-256 verified; stock loader switched to Dual (Serial primary), then a network-disabled boot reached root userspace and emitted KLAB_FREEBSD_I386_USERSPACE_OK.",
+      "evidence": "/home/reed/Documents/ChatGPT/Klab/library/bsd-evidence/freebsd-14.5-i386/smoke.log"
+    },
+    {
+      "id": "freebsd-previous-riscv64",
+      "target": "freebsd:14.5-RELEASE:riscv64",
+      "os": "freebsd",
+      "release": "14.5-RELEASE",
+      "arch": "riscv64",
+      "required_level": "USERSPACE_PASS",
+      "achieved_level": "USERSPACE_PASS",
+      "status": "pass",
+      "note": "Official qcow2 SHA-256 verified; isolated QEMU 10.0.13 with matched OpenSBI and U-Boot booted a writable overlay without networking, reached root userspace, and emitted KLAB_FREEBSD_RISCV64_USERSPACE_OK.",
+      "evidence": "/home/reed/Documents/ChatGPT/Klab/library/bsd-evidence/freebsd-14.5-riscv64/smoke.log"
+    },
+    {
+      "id": "netbsd-current-amd64",
+      "target": "netbsd:11.0:x86_64",
+      "os": "netbsd",
+      "release": "11.0",
+      "arch": "x86_64",
+      "required_level": "USERSPACE_PASS",
+      "achieved_level": "USERSPACE_PASS",
+      "status": "pass",
+      "evidence": "/home/reed/Documents/ChatGPT/Klab/library/bsd-evidence/netbsd-11.0-amd64/smoke.log"
+    },
+    {
+      "id": "netbsd-current-i386",
+      "target": "netbsd:11.0:i386",
+      "os": "netbsd",
+      "release": "11.0",
+      "arch": "i386",
+      "required_level": "USERSPACE_PASS",
+      "achieved_level": "USERSPACE_PASS",
+      "status": "pass",
+      "evidence": "/home/reed/Documents/ChatGPT/Klab/library/bsd-evidence/netbsd-11.0-i386/installed-smoke.log",
+      "note": "Official image SHA-512 verified; offline install and independent network-disabled installed-system boot passed with i386 userspace."
+    },
+    {
+      "id": "netbsd-current-aarch64",
+      "target": "netbsd:11.0:aarch64",
+      "os": "netbsd",
+      "release": "11.0",
+      "arch": "aarch64",
+      "required_level": "USERSPACE_PASS",
+      "achieved_level": "USERSPACE_PASS",
+      "status": "pass",
+      "evidence": "/home/reed/Documents/ChatGPT/Klab/library/bsd-evidence/netbsd-11.0-aarch64/smoke.log",
+      "note": "Official arm64mbr image SHA-512 verified; network-disabled QEMU UEFI boot reached root userspace and emitted KLAB_NETBSD_ARM64_USERSPACE_OK."
+    },
+    {
+      "id": "openbsd-current-amd64",
+      "target": "openbsd:7.9:x86_64",
+      "os": "openbsd",
+      "release": "7.9",
+      "arch": "x86_64",
+      "required_level": "USERSPACE_PASS",
+      "achieved_level": "USERSPACE_PASS",
+      "status": "pass",
+      "evidence": "/home/reed/Documents/ChatGPT/Klab/library/bsd-evidence/openbsd-7.9-amd64/installed-smoke.log",
+      "note": "Official ISO SHA-256 verified; offline install from ISO and an independent network-disabled installed-system boot both pass."
+    },
+    {
+      "id": "openbsd-current-arm64",
+      "target": "openbsd:7.9:aarch64",
+      "os": "openbsd",
+      "release": "7.9",
+      "arch": "aarch64",
+      "required_level": "USERSPACE_PASS",
+      "achieved_level": "USERSPACE_PASS",
+      "status": "pass",
+      "evidence": "/home/reed/Documents/ChatGPT/Klab/library/bsd-evidence/openbsd-7.9-arm64/installed-smoke.log",
+      "note": "Official image SHA-256 verified; offline installation and independent network-disabled installed-system boot passed under QEMU TCG."
+    },
+    {
+      "id": "dragonfly-current-x86_64",
+      "target": "dragonfly:6.4.2:x86_64",
+      "os": "dragonfly",
+      "release": "6.4.2",
+      "arch": "x86_64",
+      "required_level": "USERSPACE_PASS",
+      "achieved_level": "USERSPACE_PASS",
+      "status": "pass",
+      "note": "DragonFly BSD currently publishes release media for x86_64 only.",
+      "evidence": "/home/reed/Documents/ChatGPT/Klab/library/bsd-evidence/dragonfly-6.4.2-x86_64/smoke.log"
+    },
+    {
+      "id": "dragonfly-previous-x86_64",
+      "target": "dragonfly:6.2.2:x86_64",
+      "os": "dragonfly",
+      "release": "6.2.2",
+      "arch": "x86_64",
+      "required_level": "BOOT_PASS",
+      "achieved_level": "USERSPACE_PASS",
+      "status": "pass",
+      "evidence": "/home/reed/Documents/ChatGPT/Klab/library/bsd-evidence/dragonfly-6.2.2-x86_64/smoke.log",
+      "note": "Official image MD5 verified; network-disabled live-image boot reached root userspace and emitted KLAB_DRAGONFLY_USERSPACE_OK."
+    }
+  ]
+}

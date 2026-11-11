@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+klab_provider_rhel_setup(){ if klab_provider_mirror_only; then klab_provider_dnf_mirror_setup; else printf ':\n'; fi; }
+klab_provider_rhel_list(){ klab_provider_mirror_only && [[ -z "${KLAB_RHEL_IMAGE:-}" ]] && die 'mirror-only: RHEL listing requires explicit KLAB_RHEL_IMAGE'; provider_list_rhel "$@"; }
+klab_provider_rhel_fetch(){ klab_provider_mirror_only && [[ -z "${KLAB_RHEL_IMAGE:-}" ]] && die 'mirror-only: RHEL fetch requires explicit KLAB_RHEL_IMAGE'; fetch_rhel_bundle "$1" "$2" "$3"; }
+klab_provider_rhel_build_module(){ local r="$1" k="$2" img="$3" pkgs="$4" mod="$5" jobs="$6" build="${7:-}"; if [[ -n "$img" ]]; then klab_backend_dnf_build_module rhel "$img" "$(klab_provider_rhel_setup)" "$pkgs" "$k" "$mod" "$jobs" "$build"; else klab_provider_mirror_only && die 'mirror-only: RHEL host module-build fallback is disabled'; [[ -n "$build" && -d "$build" ]] || die 'RHEL host build requires explicit normalized build tree'; make -C "$build" M="$mod" -j"$jobs" modules; fi; }
+klab_provider_rhel_capture_buildenv(){ local r="$1" k="$2" b="$3" out="$4" arch="$5" img; img="${KLAB_RHEL_IMAGE:-}"; [[ -n "$img" ]] || die 'RHEL buildenv capture requires KLAB_RHEL_IMAGE with entitled repositories'; klab_backend_dnf_capture_buildenv rhel "$r" "$k" "$b" "$img" "$(klab_provider_rhel_setup)" "$out" "$arch"; }
+klab_provider_rhel_capture_toolchain(){ local r="$1" out="$2" arch="$3" compiler_version="${4:-}" img="${KLAB_RHEL_IMAGE:-}"; [[ -n "$img" ]] || die 'RHEL distro toolchain capture requires KLAB_RHEL_IMAGE'; klab_backend_dnf_capture_toolchain rhel "$r" "$img" "$(klab_provider_rhel_setup)" "$out" "$arch" "$compiler_version"; }
+klab_provider_rhel_capabilities(){ printf 'list=entitled fetch=entitled build-module=yes buildenv=entitled historical=limited snapshots=no cross-arch=no arches=x86_64\n'; }
+klab_provider_rhel_describe(){ printf 'rhel      entitled RHEL provider; explicit build-tree contract\n'; }

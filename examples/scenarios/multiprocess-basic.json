@@ -1,0 +1,60 @@
+{
+  "schema": "klab-scenario-v1",
+  "target": "upstream:v6.6",
+  "arch": "x86_64",
+  "profile": "normal",
+  "userspace": "buildroot:minimal",
+  "timeout_seconds": 30,
+  "builds": [
+    {
+      "id": "worker",
+      "source": "../scenario-worker.c",
+      "remote": "/tmp/worker",
+      "static": true,
+      "flags": [
+        "-O2"
+      ]
+    }
+  ],
+  "processes": [
+    {
+      "id": "worker1",
+      "command": "/tmp/worker worker1; rc=$?; /tmp/klab-agent event worker_done worker1; exit $rc",
+      "barrier": {
+        "name": "start",
+        "count": 3
+      },
+      "expected_exit": 0
+    },
+    {
+      "id": "worker2",
+      "command": "/tmp/worker worker2; rc=$?; /tmp/klab-agent event worker_done worker2; exit $rc",
+      "barrier": {
+        "name": "start",
+        "count": 3
+      },
+      "expected_exit": 0
+    },
+    {
+      "id": "worker3",
+      "command": "/tmp/worker worker3; rc=$?; /tmp/klab-agent event worker_done worker3; exit $rc",
+      "barrier": {
+        "name": "start",
+        "count": 3
+      },
+      "expected_exit": 0
+    }
+  ],
+  "collect": {
+    "dmesg": true,
+    "events": true
+  },
+  "modules": [
+    {
+      "id": "hello",
+      "source_dir": "../hello-module",
+      "args": "",
+      "unload_after": true
+    }
+  ]
+}

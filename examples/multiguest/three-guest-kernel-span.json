@@ -1,0 +1,23 @@
+{
+  "schema": "klab-multiguest-scenario-v1",
+  "network": {"cidr": "10.77.1.0/24"},
+  "timeout_seconds": 60,
+  "guests": [
+    {
+      "id": "server", "target": "upstream:v6.6", "arch": "x86_64",
+      "builds": [{"id":"netpair","source":"../network-pair.c","remote":"/tmp/netpair","static":true}],
+      "modules": [{"id":"hello","source_dir":"../hello-module","name":"hello","unload_after":true}],
+      "processes": [{"id":"server","command":"/tmp/netpair server 23457 2","gate":{"name":"start"},"expected_exit":0}]
+    },
+    {
+      "id": "client-old", "target": "upstream:v5.4", "arch": "x86_64",
+      "builds": [{"id":"netpair","source":"../network-pair.c","remote":"/tmp/netpair","static":true}],
+      "processes": [{"id":"client","command":"/tmp/netpair client 10.77.1.11 23457 from-v5.4","gate":{"name":"start"},"expected_exit":0}]
+    },
+    {
+      "id": "client-new", "target": "upstream:v7.0", "arch": "x86_64",
+      "builds": [{"id":"netpair","source":"../network-pair.c","remote":"/tmp/netpair","static":true}],
+      "processes": [{"id":"client","command":"/tmp/netpair client 10.77.1.11 23457 from-v7.0","gate":{"name":"start"},"expected_exit":0}]
+    }
+  ]
+}

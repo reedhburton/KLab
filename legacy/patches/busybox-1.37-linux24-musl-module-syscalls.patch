@@ -1,0 +1,22 @@
+--- a/modutils/modutils-24.c
++++ b/modutils/modutils-24.c
+@@ -62,5 +62,19 @@
+ #include "modutils.h"
+ #include <sys/utsname.h>
++#include <sys/syscall.h>
++
++/* musl omits wrappers for the module syscalls retired after Linux 2.4. */
++static int klab_query_module(const char *name, int which, void *buf,
++		size_t size, size_t *ret)
++{
++	return syscall(__NR_query_module, name, which, buf, size, ret);
++}
++static unsigned long klab_create_module(const char *name, size_t size)
++{
++	return syscall(__NR_create_module, name, size);
++}
++#define query_module klab_query_module
++#define create_module klab_create_module
+ 
+ #if ENABLE_FEATURE_INSMOD_LOADINKMEM
+ #define LOADBITS 0

@@ -1,0 +1,37 @@
+KLab full integrated package R7 validation — 2026-09-22
+
+PASS: Python syntax/bytecode validation for lib/klab_buildenv.py
+PASS: tests/buildenv-hardlinks.sh
+PASS: tests/buildenv-artifact.sh
+PASS: tests/buildenv-negative.sh
+PASS: tests/buildenv-provenance-hardening.sh
+PASS: tests/buildenv-capture-pair.sh
+PASS: tests/combined-chain-audit.sh
+PASS: tests/provider-rootless-ownership.sh
+PASS: tests/provider-contract.sh (including provider-routing)
+PASS: tests/provider-compat-hardening.sh
+
+R7 hardlink policy:
+- safe in-root hardlinks to regular archive members: accepted
+- absolute / .. / missing / cyclic / non-regular hardlink targets: rejected
+- duplicate archive member names: rejected
+
+Live Ubuntu 17.04 prepare remains the next end-to-end test.
+
+R8 validation update (2026-09-22):
+PASS bash syntax: klab-buildenv.sh
+PASS buildenv-readonly-workspace.sh
+PASS buildenv-artifact.sh
+PASS buildenv-hardlinks.sh
+PASS buildenv-negative.sh
+PASS buildenv-provenance-hardening.sh
+PASS buildenv-toolchain-runner.sh
+PASS buildenv-capture-pair.sh
+PASS toolchain-boundary.sh
+PASS provider-contract.sh + provider-routing
+PASS provider-compat-hardening.sh
+PASS provider-rootless-ownership.sh
+PASS distro-abi-vermagic.sh
+PASS container-runtime-ordering.sh
+NOTE combined-chain-audit was started as part of a larger batch but the batch exceeded the execution time limit before completion; no R8 claim is made for that test.
+NOTE live bwrap execution is intentionally validated on the user's KLab host because this packaging environment does not provide bwrap.

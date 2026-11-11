@@ -1,0 +1,22 @@
+{
+  "schema": "klab-multiguest-scenario-v1",
+  "network": {"cidr": "10.77.2.0/24"},
+  "timeout_seconds": 75,
+  "guests": [
+    {
+      "id": "server-x86", "target": "upstream:v6.6", "arch": "x86_64",
+      "builds": [{"id":"netpair","source":"../network-pair.c","remote":"/tmp/netpair","static":true}],
+      "processes": [{"id":"server","command":"/tmp/netpair server 23458 2","gate":{"name":"start"},"expected_exit":0}]
+    },
+    {
+      "id": "client-arm64", "target": "upstream:v6.6", "arch": "aarch64",
+      "builds": [{"id":"netpair","source":"../network-pair.c","remote":"/tmp/netpair","static":true}],
+      "processes": [{"id":"client","command":"/tmp/netpair client 10.77.2.11 23458 from-arm64","gate":{"name":"start"},"expected_exit":0}]
+    },
+    {
+      "id": "client-i386", "target": "upstream:v6.6", "arch": "i386",
+      "builds": [{"id":"netpair","source":"../network-pair.c","remote":"/tmp/netpair","static":true}],
+      "processes": [{"id":"client","command":"/tmp/netpair client 10.77.2.11 23458 from-i386","gate":{"name":"start"},"expected_exit":0}]
+    }
+  ]
+}

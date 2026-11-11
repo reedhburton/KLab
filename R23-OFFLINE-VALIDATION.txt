@@ -1,0 +1,19 @@
+R23 final offline audit validation
+Date: 2026-09-22
+
+Confirmed fix: retained DEBs are now semantically bound to exact APT package metadata SHA-256 evidence.
+Additional regression maintenance: buildenv-distro-native-binding fixture updated to satisfy the R20+ host-tool ownership contract.
+
+Passed targeted tests:
+- buildenv-distro-native-binding.sh
+- apt-package-metadata-provenance.sh
+- apt-authentication-policy.sh
+- distro-toolchain-provenance-semantics.sh
+- distro-toolchain-integrity.sh
+- old-gcc-version-probe-consistency.sh
+- bash syntax for changed shell files/live runner
+- Python byte compilation for lib/*.py and apply-*.py
+
+A complete run-all invocation was attempted, but the external execution window expired while the suite was still progressing through its individually bounded tests. No failure had occurred in that second run before the outer timeout. This is not represented as a complete run-all pass.
+
+No live old-releases.ubuntu.com, CentOS Vault, or QEMU validation was performed in R23.

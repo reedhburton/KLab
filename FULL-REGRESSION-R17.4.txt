@@ -1,0 +1,485 @@
+
+=== alpine-apk-provider.sh ===
+alpine-apk-provider: PASS
+
+=== apt-authentication-policy.sh ===
+APT authentication policy regression: PASS
+
+=== apt-buildenv-provider-arity.sh ===
+PASS: APT buildenv provider wrappers match backend arity under set -u
+
+=== apt-capture-script-quoting.sh ===
+apt-capture-script-quoting: PASS
+
+=== apt-list-quoting.sh ===
+apt-list-quoting: PASS
+
+=== apt-package-metadata-provenance.sh ===
+PASS
+
+=== apt-vintage-python-bootstrap.sh ===
+apt-vintage-python-bootstrap: PASS
+
+=== arch-e2e-dryrun.sh ===
+PASS: multi-architecture E2E dry-run/fail-report contract
+
+=== arch-e2e-file-match.sh ===
+PASS: architecture ELF identity filters
+
+=== arch-plan-cli.sh ===
+PASS: arch-plan CLI and version gating
+
+=== architecture-model.sh ===
+PASS: architecture target/build/exec/guest model
+
+=== atomic-target-import.sh ===
+atomic-target-import: PASS
+
+=== buildenv-artifact.sh ===
+buildenv-artifact: PASS
+
+=== buildenv-capture-pair.sh ===
+pkg	1	x86_64
+5333769ec8b3d5a482196f4b26d865538f4282782fc29775618ad7049bdbf6b7  /tmp/tmp.UQgPIcis8Q/out.klabbuildenv
+buildenv-capture-pair: PASS
+
+=== buildenv-distro-native-binding.sh ===
+PASS: buildenv identity pins distro-native compiler contract and distro-toolchain object ID
+
+=== buildenv-doctor.sh ===
+buildenv-doctor: PASS
+
+=== buildenv-hardlinks.sh ===
+PASS: buildenv hardlinks preserve normal rootfs hardlinks and reject escaping targets
+
+=== buildenv-host-tool-owner-semantics.sh ===
+buildenv host-tool owner semantics: PASS
+
+=== buildenv-inventory.sh ===
+buildenv-inventory: PASS
+
+=== buildenv-negative.sh ===
+buildenv-negative: PASS
+
+=== buildenv-patcher-smoke.sh ===
+buildenv-patcher-smoke: PASS
+
+=== buildenv-provenance-hardening.sh ===
+buildenv-provenance-hardening: PASS
+
+=== buildenv-readonly-workspace.sh ===
+buildenv read-only workspace regression: PASS
+
+=== buildenv-toolchain-runner.sh ===
+buildenv-toolchain-runner: PASS
+
+=== buildenv-transfer-patcher.sh ===
+buildenv-transfer-patcher: PASS
+
+=== centos7-key-provenance.sh ===
+PASS: CentOS 7 Vault transport and signing-key identity are pinned
+
+=== combined-chain-audit.sh ===
+combined-chain-audit: PASS
+
+=== compat-default-off.sh ===
+PASS compat-default-off
+
+=== container-runtime-ordering.sh ===
+PASS: container runtime argument ordering
+
+=== daytime-r3-regressions.sh ===
+SAY:Reconstructing expired Fedora Koji buildroot repo from retained package builds (aaaaaaaaaaaaaaaa, x86_64)
+container-progress-that-must-not-enter-command-substitution
+daytime-r3-regressions: PASS
+
+=== daytime-r4-regressions.sh ===
+daytime-r4-regressions: PASS
+
+=== daytime-r5-regressions.sh ===
+daytime-r5-regressions: PASS
+
+=== daytime-sweep-wiring.sh ===
+daytime-sweep-wiring: PASS
+
+=== directory-import-order.sh ===
+bundle:import /tmp/tmp.IdFhXlmN7q/xfer/c.klab
+directory-import-order: PASS
+
+=== distro-abi-vermagic.sh ===
+PASS: distro ABI identity uses module vermagic, not upstream Makefile base
+
+=== distro-native-host-tool-alternatives.sh ===
+PASS: production ownership follows alternatives for Debian/RPM and rejects unowned or missing executables
+
+=== distro-native-host-tool-baseline.sh ===
+PASS: distro-native runtime has an explicit conservative host-tool baseline preflight
+
+=== distro-native-host-tool-owner-reproof.sh ===
+distro-native host-tool owner reproof: PASS
+
+=== distro-native-host-tool-ownership.sh ===
+distro-native host-tool ownership regression: PASS
+
+=== distro-native-host-tool-usrmerge.sh ===
+distro-native host-tool usrmerge ownership: PASS
+
+=== distro-native-wiring.sh ===
+PASS: explicit distro-native prepare/build/import dependency path is wired end-to-end
+
+=== distro-toolchain-artifact.sh ===
+PASS: content-addressed distro toolchain package artifact create/verify/import
+
+=== distro-toolchain-integrity.sh ===
+PASS: distro toolchain rejects corrupt installed objects and unchecksummed archive members
+
+=== distro-toolchain-provenance-compiler.sh ===
+PASS: provenance is identity-bound and compiler exact/compatible policies are explicit
+
+=== distro-toolchain-provenance-semantics.sh ===
+PASS
+
+=== distro-toolchain-wiring.sh ===
+PASS: distro-native GCC/binutils artifact capture/import is wired across stable distro providers
+
+=== fedora-binutils-provider-positional.sh ===
+fedora-binutils-provider-positional: PASS
+
+=== fedora-binutils-runtime-validation.sh ===
+fedora-binutils-runtime-validation: PASS
+
+=== fedora-koji-buildroot.sh ===
+fedora-koji-buildroot: PASS
+
+=== fedora-vintage-root-sync.sh ===
+fedora-vintage-root-sync: PASS
+
+=== guest-agent-gate.sh ===
+PASS
+
+=== guest-agent-protocol.sh ===
+PASS: guest agent process/barrier/event protocol
+
+=== import-env-relocation.sh ===
+import-env-relocation: PASS
+
+=== installer-smoke.sh ===
+installer-smoke: PASS
+
+=== installer-wiring.sh ===
+installer-wiring: PASS
+
+=== mips-big-endian-file-match.sh ===
+PASS: big-endian MIPS ELF validation
+
+=== mips-big-endian-model.sh ===
+PASS: big-endian MIPS E2E model
+
+=== mipsel-e2e-model.sh ===
+PASS: mipsel E2E model
+
+=== mipsel-file-match.sh ===
+PASS: mipsel ELF validation
+
+=== multiarch-overnight-r12-wiring.sh ===
+PASS: r12 multiarch overnight wiring
+
+=== multiarch-overnight-r13-wiring.sh ===
+PASS: r13 multiarch runner wiring
+
+=== multiarch-overnight-resume.sh ===
+PASS: r12 multiarch overnight resume
+
+=== multiguest-dryrun.sh ===
+PASS
+
+=== multiguest-overnight-resume.sh ===
+PASS
+
+=== multiguest-plan.sh ===
+PASS
+
+=== multiguest-r16-model.sh ===
+PASS
+
+=== native-paths.sh ===
+PASS native-paths
+
+=== network-profile-model.sh ===
+PASS
+
+=== old-gcc-version-probe-consistency.sh ===
+PASS
+
+=== overnight-hardening-02-09.sh ===
+overnight-hardening-02-09: PASS
+
+=== patcher-smoke.sh ===
+patcher-smoke: PASS
+
+=== provider-arch-model.sh ===
+PASS: provider target-arch vs staging-arch capability model
+
+=== provider-compat-hardening.sh ===
+provider-compat-hardening: PASS
+
+=== provider-contract.sh ===
+provider-contract: PASS
+provider-routing: PASS
+
+=== provider-mirror-policy.sh ===
+provider-mirror-policy: PASS
+
+=== provider-rootless-ownership.sh ===
+provider-rootless-ownership: PASS
+
+=== qemu-control-model.sh ===
+PASS: architecture-specific QEMU control transport model
+
+=== qmp-link-control.sh ===
+PASS
+
+=== r14-runner-wiring.sh ===
+PASS: r14 overnight runner wiring
+
+=== r16-destructive-faults.sh ===
+PASS: r16 destructive-fault synthetic validation
+
+=== r16-freeze-gate.sh ===
+PASS
+
+=== r16-kernel-version-matrix.sh ===
+PASS r16 kernel-version matrix
+
+=== r16-mixed-arch-matrix.sh ===
+PASS r16 mixed architecture matrix
+
+=== r16-mixed-arch-routed.sh ===
+{
+  "actions": [],
+  "guests": [
+    {
+      "arch": "x86_64",
+      "builds": [
+        {
+          "flags": [],
+          "id": "netpair",
+          "remote": "/tmp/netpair",
+          "source": "../network-pair.c",
+          "static": true
+        }
+      ],
+      "files": [],
+      "forward_ipv4": false,
+      "id": "client-x86",
+      "interfaces": [
+        {
+          "capture": true,
+          "delay_us": 0,
+          "guest_ifname": "eth0",
+          "id": "net0",
+          "ip": "10.77.80.11/24",
+          "mac": "52:54:00:00:11:01",
+          "network": "lan-client"
+        }
+      ],
+      "ip": "10.77.80.11/24",
+      "mac": "52:54:00:00:11:01",
+      "modules": [],
+      "processes": [
+        {
+          "command": "/tmp/netpair client 10.77.90.11 24003 mixed-arch-routed",
+          "depends_on": [
+            {
+              "guest": "server-i386",
+              "process": "server",
+              "state": "ready"
+            }
+          ],
+          "expected_exit": 0,
+          "expected_signal": 0,
+          "id": "client",
+          "on_dependency_failure": "skip",
+          "timeout_seconds": 90
+        }
+      ],
+      "profile": "normal",
+      "routes": [
+        {
+          "to": "10.77.90.0/24",
+          "via": "10.77.80.1"
+        }
+      ],
+      "target": "upstream:v5.15",
+      "timeout_seconds": 90,
+      "userspace": "buildroot:minimal"
+    },
+    {
+      "arch": "aarch64",
+      "builds": [],
+      "files": [],
+      "forward_ipv4": true,
+      "id": "router-arm64",
+      "interfaces": [
+        {
+          "capture": true,
+          "delay_us": 0,
+          "guest_ifname": "eth0",
+          "id": "left",
+          "ip": "10.77.80.1/24",
+          "mac": "52:54:01:00:12:01",
+          "network": "lan-client"
+        },
+        {
+          "capture": true,
+          "delay_us": 2500,
+          "guest_ifname": "eth1",
+          "id": "right",
+          "ip": "10.77.90.1/24",
+          "mac": "52:54:01:01:12:02",
+          "network": "lan-server"
+        }
+      ],
+      "ip": "10.77.80.1/24",
+      "mac": "52:54:01:00:12:01",
+      "modules": [],
+      "processes": [],
+      "profile": "normal",
+      "routes": [],
+      "target": "upstream:v6.6",
+      "timeout_seconds": 90,
+      "userspace": "buildroot:minimal"
+    },
+    {
+      "arch": "i386",
+      "builds": [
+        {
+          "flags": [],
+          "id": "netpair",
+          "remote": "/tmp/netpair",
+          "source": "../network-pair.c",
+          "static": true
+        }
+      ],
+      "files": [],
+      "forward_ipv4": false,
+      "id": "server-i386",
+      "interfaces": [
+        {
+          "capture": true,
+          "delay_us": 2500,
+          "guest_ifname": "eth0",
+          "id": "net0",
+          "ip": "10.77.90.11/24",
+          "mac": "52:54:02:00:13:01",
+          "network": "lan-server"
+        }
+      ],
+      "ip": "10.77.90.11/24",
+      "mac": "52:54:02:00:13:01",
+      "modules": [],
+      "processes": [
+        {
+          "command": "/tmp/netpair server 24003 1",
+          "depends_on": [],
+          "expected_exit": 0,
+          "expected_signal": 0,
+          "id": "server",
+          "on_dependency_failure": "skip",
+          "ready": {
+            "stdout": "SERVER_READY",
+            "timeout_seconds": 90
+          },
+          "timeout_seconds": 90
+        }
+      ],
+      "profile": "normal",
+      "routes": [
+        {
+          "to": "10.77.80.0/24",
+          "via": "10.77.90.1"
+        }
+      ],
+      "target": "upstream:v5.10",
+      "timeout_seconds": 90,
+      "userspace": "buildroot:minimal"
+    }
+  ],
+  "networks": [
+    {
+      "capture": true,
+      "cidr": "10.77.80.0/24",
+      "delay_us": 0,
+      "id": "lan-client"
+    },
+    {
+      "capture": true,
+      "cidr": "10.77.90.0/24",
+      "delay_us": 2500,
+      "id": "lan-server"
+    }
+  ],
+  "schema": "klab-multiguest-scenario-v2",
+  "timeout_seconds": 90
+}
+PASS r16 mixed-architecture routed model
+
+=== r16-overnight-resume.sh ===
+PASS
+
+=== residual-path-audit.sh ===
+PASS residual-path-audit
+
+=== root-layout.sh ===
+PASS root-layout
+
+=== rpm-signature-provenance.sh ===
+rpm signature provenance: PASS
+
+=== rpm6-signature-output.sh ===
+rpm6 signature output: PASS
+
+=== scenario-barrier-wrapper.sh ===
+PASS: scenario barrier command wrapper
+
+=== scenario-dryrun.sh ===
+PASS: scenario dry-run architecture contract
+
+=== scenario-plan.sh ===
+PASS: scenario schema/planner
+
+=== scenario-report.sh ===
+PASS: scenario canonical report
+
+=== thin-toolchain-compat.sh ===
+thin-toolchain-compat: PASS
+
+=== toolchain-boundary-patcher.sh ===
+toolchain-boundary-patcher: PASS
+
+=== toolchain-boundary.sh ===
+toolchain-boundary: PASS
+
+=== toolchain-nearest-fallback.sh ===
+PASS: kernel.org fallback selects closest compatible GCC release, not newest major
+
+=== ubuntu-historical-apt-layout.sh ===
+PASS: Ubuntu historical APT setup recreates missing directory skeleton and writes zesty sources
+
+=== unified-root-integration.sh ===
+
+==> Created source artifact /tmp/tmp.Xeh5vdvYh0/source.klabsource
+PASS unified-root integration: child isolation, canonical stores, shared import, capture propagation
+
+=== vintage-pretransfer-gate.sh ===
+PASS: buildenv/toolchain pair validation gates unproven vintage relocation semantics before transfer
+
+=== vintage-relocation-validation.sh ===
+PASS: vintage relocation validator distinguishes source-backed support from unproven vintage hazards
+
+=== wide-sweep-regressions.sh ===
+wide-sweep-regressions: PASS
+
+=== syntax ===
+syntax-static: PASS
+ALL M2 NETWORK-FREE TESTS: PASS

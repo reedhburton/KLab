@@ -1,0 +1,49 @@
+{
+  "schema": "klab-scenario-v1",
+  "target": "upstream:v6.6",
+  "arch": "x86_64",
+  "profile": "normal",
+  "userspace": "buildroot:minimal",
+  "timeout_seconds": 60,
+  "modules": [
+    {
+      "id": "hello",
+      "source_dir": "../hello-module",
+      "name": "kernel_lab_hello",
+      "auto_load": false,
+      "unload_after": false
+    }
+  ],
+  "builds": [
+    {
+      "id": "worker",
+      "source": "../scenario-worker.c",
+      "remote": "/tmp/worker",
+      "static": true,
+      "flags": ["-O2"]
+    }
+  ],
+  "files": [],
+  "processes": [
+    {
+      "id": "module_owner",
+      "steps": [
+        {"run": "insmod /tmp/klab-modules/hello.ko", "signal": "module_ready"},
+        {"run": "dmesg | grep -q 'kernel_lab_hello: loaded'"},
+        {"wait_for": "responder_done"},
+        {"exec": "/tmp/worker final-same-pid-$KLAB_SEQUENCE_PID"}
+      ],
+      "expected_exit": 0
+    },
+    {
+      "id": "responder",
+      "steps": [
+        {"wait_for": "module_ready"},
+        {"run": "/tmp/worker responder"},
+        {"signal": "responder_done"}
+      ],
+      "expected_exit": 0
+    }
+  ],
+  "collect": {"dmesg": true, "events": true}
+}

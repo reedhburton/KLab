@@ -1,0 +1,16 @@
+KLab fresh-root BSD simple CLI acceptance
+Date: 2026-10-07
+Root: /tmp/klab-rc1-root
+Offline repository: /tmp/klab-rc1-repo
+
+The repository was seeded with hard links to previously downloaded,
+checksum-verified official media to avoid duplicate multi-gigabyte data.
+klab pull reverified and cataloged each target. klab run created fresh overlays.
+
+PASS freebsd:14.5-RELEASE:i386 KLAB_FREEBSD_I386_USERSPACE_OK
+PASS freebsd:14.5-RELEASE:riscv64 KLAB_FREEBSD_RISCV64_USERSPACE_OK
+PASS netbsd:11.0:aarch64 KLAB_NETBSD_ARM64_USERSPACE_OK
+PASS dragonfly:6.2.2:x86_64 KLAB_DRAGONFLY_USERSPACE_OK
+
+No guest networking was enabled. Evidence is under:
+/tmp/klab-rc1-root/results/bsd

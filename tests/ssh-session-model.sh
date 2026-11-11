@@ -1,0 +1,37 @@
+#!/usr/bin/env bash
+set -euo pipefail
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+T="$(mktemp -d)"; trap 'rm -rf "$T"' EXIT
+export KLAB_ROOT="$T/lab" KLAB_ARCH_PROFILES_DIR="$ROOT/architectures"
+out="$($ROOT/kernel-lab.sh userspaces)"
+grep -Fq BUILDROOT_SSH <<<"$out"
+# SSH is opt-in. The bind and authentication policy are both explicit.
+grep -Fq 'hostfwd=tcp:${ssh_bind}:${ssh_port}-10.0.2.15:22' "$ROOT/kernel-lab.sh"
+grep -Fq '[[ "$ssh_bind" == 127.0.0.1 || "$ssh_bind" == 0.0.0.0 ]]' "$ROOT/kernel-lab.sh"
+grep -Fq 'case "$ssh_auth" in off|key|password|none)' "$ROOT/kernel-lab.sh"
+grep -Fq "key) ssh_preauth='sed -i \"s|^root:[^:]*:|root:x:|\" /etc/passwd;" "$ROOT/kernel-lab.sh"
+grep -Fq "none) ssh_preauth=" "$ROOT/kernel-lab.sh"
+grep -Fq "dropbear_flags='-B'" "$ROOT/kernel-lab.sh"
+grep -Fq 'openssl passwd -6 -stdin' "$ROOT/kernel-lab.sh"
+grep -Fq 'SESSION_SSH_AUTH=%q' "$ROOT/kernel-lab.sh"
+grep -Fq 'SESSION_SSH_BIND=%q' "$ROOT/kernel-lab.sh"
+grep -Fq 'PreferredAuthentications=password' "$ROOT/kernel-lab.sh"
+grep -Fq 'ssh-keygen -y -f "$ssh_key"' "$ROOT/kernel-lab.sh"
+grep -Fq 'UserKnownHostsFile="$(session_dir "$name")/ssh-known-hosts"' "$ROOT/kernel-lab.sh"
+grep -Fq 'PermitRootLogin=without-password' "$ROOT/kernel-lab.sh"
+grep -Fq -- '-o Port=22 -o ListenAddress=0.0.0.0' "$ROOT/kernel-lab.sh"
+grep -Fq 'sshd -D -e -f /dev/null' "$ROOT/kernel-lab.sh"
+! grep -Fq -- '-o ListenAddress=0.0.0.0 -o Port=22' "$ROOT/kernel-lab.sh"
+! grep -Fq 'PermitRootLogin=prohibit-password' "$ROOT/kernel-lab.sh"
+grep -Fq 'if ! kill -0 \$sshd_pid 2>/dev/null; then cat /tmp/klab-openssh.log >&2; exit 70; fi' "$ROOT/kernel-lab.sh"
+grep -Fq 'BR2_PACKAGE_DROPBEAR y' "$ROOT/kernel-lab.sh"
+grep -Fq 'BR2_PACKAGE_DROPBEAR y' "$ROOT/klab-buildroot-cache.sh"
+# Private keys and plaintext passwords are never copied into the guest or session metadata.
+! grep -Eq 'cp[[:space:]]+"?\$ssh_key"?[[:space:]]+"?\$root' "$ROOT/kernel-lab.sh"
+! grep -Fq 'SESSION_SSH_PASSWORD=' "$ROOT/kernel-lab.sh"
+bash -n "$ROOT/kernel-lab.sh"
+grep -Fq '[ -e /etc/shadow ] || pwconv;' "$ROOT/kernel-lab.sh"
+! grep -Fq 'usermod -p x root' "$ROOT/kernel-lab.sh"
+grep -Fq 'could not install guest authorized key' "$ROOT/kernel-lab.sh"
+grep -Fq 'chmod u+w "$root" "$root/root" "$root/etc" "$root/var" "$root/tmp"' "$ROOT/kernel-lab.sh"
+echo 'PASS: optional SSH supports explicit bind plus key, password, and passwordless authentication models'

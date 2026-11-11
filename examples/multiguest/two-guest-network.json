@@ -1,0 +1,17 @@
+{
+  "schema": "klab-multiguest-scenario-v1",
+  "network": {"cidr": "10.77.0.0/24"},
+  "timeout_seconds": 45,
+  "guests": [
+    {
+      "id": "server", "target": "upstream:v6.6", "arch": "x86_64",
+      "builds": [{"id":"netpair","source":"../network-pair.c","remote":"/tmp/netpair","static":true}],
+      "processes": [{"id":"server","command":"/tmp/netpair server 23456 1","gate":{"name":"start"},"expected_exit":0}]
+    },
+    {
+      "id": "client", "target": "upstream:v6.6", "arch": "x86_64",
+      "builds": [{"id":"netpair","source":"../network-pair.c","remote":"/tmp/netpair","static":true}],
+      "processes": [{"id":"client","command":"/tmp/netpair client 10.77.0.11 23456 hello-from-client","gate":{"name":"start"},"expected_exit":0}]
+    }
+  ]
+}

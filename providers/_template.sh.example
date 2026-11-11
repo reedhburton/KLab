@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+# Copy to providers/mydistro.sh and rename the function prefix accordingly.
+
+klab_provider_mydistro_describe() {
+  printf 'mydistro   short provider description\n'
+}
+
+klab_provider_mydistro_capabilities() {
+  printf 'list=yes fetch=yes build-module=yes buildenv=yes historical=limited snapshots=no cross-arch=no arches=x86_64\n'
+}
+
+klab_provider_mydistro_list() {
+  local release="$1" pattern="${2:-}"
+  # Choose repository policy and call a backend, for example:
+  # klab_backend_apt_list mydistro "$image" "$setup" "$regex" "$pattern"
+  die "mydistro list is not implemented"
+}
+
+klab_provider_mydistro_fetch() {
+  local release="$1" krel="$2" bundle="$3"
+  # Download packages and finish through normalize_bundle via a backend helper.
+  die "mydistro fetch is not implemented"
+}
+
+klab_provider_mydistro_build_module() {
+  local release="$1" krel="$2" image="$3" packages="$4" module_dir="$5" jobs="$6" build_dir="${7:-}" arch="${8:-${ARCH:-x86_64}}"
+  # Use the same repository policy as list/fetch, then delegate to a backend.
+  die "mydistro module build is not implemented"
+}
+
+klab_provider_mydistro_capture_buildenv() {
+  local release="$1" krel="$2" bundle="$3" output="$4" arch="$5"
+  # Delegate to the matching backend capture helper so the result crosses the
+  # same .klabbuildenv boundary used by offline module builds.
+  die "mydistro buildenv capture is not implemented"
+}

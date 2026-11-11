@@ -1,0 +1,9 @@
+KLab vintage/toolchain audit pass 02
+Date: 2026-09-22
+
+Implemented: distro-native buildenv execution prototype, buildenv v3 binding, thin-bundle dependency propagation, vintage relocation gate on native smoke modules, distro-toolchain v2 integrity hardening, old-GCC probe fallback.
+
+Static/regression validation: PASS for targeted and downstream tests listed in VINTAGE-TOOLCHAIN-AUDIT.md.
+Monolithic run-all: PARTIAL due execution time limit; relevant remainder rerun individually PASS.
+Live APT/DNF/yum capture: NOT TESTED.
+Live offline QEMU/module insertion using distro-native toolchain: NOT TESTED.

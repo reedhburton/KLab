@@ -1,0 +1,20 @@
+KLab 0.0.0b r17.8 packaged live regression — PASS
+
+The tests used library/klab-0.0.0b-r17.8/klab and a new offline KLAB_ROOT.
+
+PASS upstream:v2.4.37.11 i386
+  fresh bundle import restored Debian GCC 3.3.6 and i386 BusyBox
+  persistent QEMU session became ready
+  uname -r: 2.4.37.11
+
+PASS upstream:v2.6.0 x86_64
+  fresh bundle import restored Debian GCC 3.3.6 and x86_64 BusyBox
+  persistent QEMU session became ready
+  uname -r: 2.6.0
+
+PASS upstream:v6.6 aarch64
+  fresh bundle import relocated the Buildroot SDK and restored GCC 11.4.0 cross tools
+  persistent QEMU virt session became ready
+  uname -r: 6.6.0
+
+All guests were stopped cleanly after validation.

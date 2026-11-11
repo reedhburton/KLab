@@ -1,0 +1,87 @@
+--- a/arch/x86_64/kernel/e820.c
++++ b/arch/x86_64/kernel/e820.c
+@@ -183,6 +183,40 @@
+ 	return end_pfn;	
+ }
+ 
++/*
++ * Compute how much memory is missing in a range.
++ * Unlike the other functions in this file the arguments are in page numbers.
++ */
++unsigned long __init
++e820_hole_size(unsigned long start_pfn, unsigned long end_pfn)
++{
++	unsigned long ram = 0;
++	unsigned long start = start_pfn << PAGE_SHIFT;
++	unsigned long end = end_pfn << PAGE_SHIFT;
++	int i;
++	for (i = 0; i < e820.nr_map; i++) {
++		struct e820entry *ei = &e820.map[i];
++		unsigned long last, addr;
++
++		if (ei->type != E820_RAM ||
++		    ei->addr+ei->size <= start ||
++		    ei->addr >= end)
++			continue;
++
++		addr = round_up(ei->addr, PAGE_SIZE);
++		if (addr < start)
++			addr = start;
++
++		last = round_down(ei->addr + ei->size, PAGE_SIZE);
++		if (last >= end)
++			last = end;
++
++		if (last > addr)
++			ram += last - addr;
++	}
++	return ((end - start) - ram) >> PAGE_SHIFT;
++}
++
+ /* 
+  * Mark e820 reserved areas as busy for the resource manager.
+  */
+--- a/include/asm-x86_64/e820.h
++++ b/include/asm-x86_64/e820.h
+@@ -51,6 +51,8 @@
+ 
+ extern void e820_bootmem_free(pg_data_t *pgdat, unsigned long start,unsigned long end);
+ extern void e820_setup_gap(void);
++extern unsigned long e820_hole_size(unsigned long start_pfn,
++				    unsigned long end_pfn);
+ 
+ extern void __init parse_memopt(char *p, char **end);
+ 
+--- a/arch/x86_64/mm/init.c
++++ b/arch/x86_64/mm/init.c
+@@ -322,18 +322,26 @@
+ void __init paging_init(void)
+ {
+ 	{
+-		unsigned long zones_size[MAX_NR_ZONES] = {0, 0, 0};
++		unsigned long zones_size[MAX_NR_ZONES];
++		unsigned long holes[MAX_NR_ZONES];
+ 		unsigned int max_dma;
+ 
++		memset(zones_size, 0, sizeof(zones_size));
++		memset(holes, 0, sizeof(holes));
++
+ 		max_dma = virt_to_phys((char *)MAX_DMA_ADDRESS) >> PAGE_SHIFT;
+ 
+-		if (end_pfn < max_dma)
++		if (end_pfn < max_dma) {
+ 			zones_size[ZONE_DMA] = end_pfn;
+-		else {
++			holes[ZONE_DMA] = e820_hole_size(0, end_pfn);
++		} else {
+ 			zones_size[ZONE_DMA] = max_dma;
++			holes[ZONE_DMA] = e820_hole_size(0, max_dma);
+ 			zones_size[ZONE_NORMAL] = end_pfn - max_dma;
++			holes[ZONE_NORMAL] = e820_hole_size(max_dma, end_pfn);
+ 		}
+-		free_area_init(zones_size);
++		free_area_init_node(0, NODE_DATA(0), zones_size,
++				    __pa(PAGE_OFFSET) >> PAGE_SHIFT, holes);
+ 	}
+ 	return;
+ }

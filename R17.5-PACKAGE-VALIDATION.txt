@@ -1,0 +1,40 @@
+KLab 0.0.0b r17.5 package validation
+Date: 2026-09-30 HST / 2026-10-01 UTC
+
+Candidate archive:
+- 304 payload files
+- archive SHA-256 verified
+- every internal SHA256SUMS entry verified after extraction
+- shell syntax verified after extraction
+- all 103 network-free tests: PASS
+
+Seven-case live matrix from independently extracted candidate:
+- stable-x86-arm64-i386: PASS
+- stable-arm64-x86-armv7: PASS
+- stable-armv7-arm64-x86: PASS
+- stable-i386-x86-arm64: PASS
+- experimental-x86-arm64-mipsel: PASS
+- experimental-mipsel-x86-armv7: PASS
+- experimental-mips-arm64-x86: PASS
+
+Matrix evidence:
+/home/reed/klab-data/results/logs/live-mixed-overnight-r18/packaged-r17.5-20260930/summary.final.tsv
+/home/reed/klab-data/results/live-mixed-overnight-r18-packaged-r17.5-20260930-results.tar.gz
+
+Fresh-root offline validation using upstream:v5.15/mipsel:
+- source .klab verified
+- imported with KLAB_OFFLINE=1 into a new canonical root
+- single-root Buildroot SDK relocated successfully
+- bound kernel.org GCC 11.4.0 MIPS toolchain imported
+- .klab repacked without network and verified
+- external hello module rebuilt against imported source/build trees
+- QEMU MIPSel booted Linux 5.15.0
+- hello module loaded and guest userspace assertion passed
+- terminal marker: KLAB_RESULT=PASS
+
+Offline evidence root:
+/home/reed/Documents/ChatGPT/Klab/library/offline-validation-r17.5-mipsel
+
+Pseudo-offline repository:
+/home/reed/Documents/ChatGPT/Klab/library/pseudo-offline-r17.5
+Contains seven indexed targets covering x86_64, i386, AArch64, ARMv7, MIPSel, and MIPS. INDEX.tsv and INDEX.tsv.sha256 verify.

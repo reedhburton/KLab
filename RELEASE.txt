@@ -1,0 +1,5 @@
+KLab 1.0.0-rc14 — pre-v1 exact-target kernel and userspace compatibility laboratory.
+
+This release candidate passes the complete network-free regression suite. The upstream validation ledger is fully green for 137/137 exact target/architecture pairs, including Linux 2.0.40 through current kernels, module lifecycle and process workloads, two-guest TCP, userspace conformance, and real SSH where supported.
+
+The broader catalog contains 658 exact target/architecture pairs. Targets without current full validation evidence are reported as packaged or experimental and are not described as fully supported. The final release decision still requires this release packaging pass and review of its recorded blockers.

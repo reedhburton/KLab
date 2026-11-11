@@ -1,0 +1,26 @@
+{
+  "schema": "klab-multiguest-scenario-v2",
+  "timeout_seconds": 30,
+  "networks": [{"id":"lan0","cidr":"10.77.50.0/24"}],
+  "guests": [
+    {
+      "id":"control","target":"upstream:v6.6","arch":"x86_64",
+      "interfaces":[{"id":"net0","network":"lan0","ip":"10.77.50.11/24"}],
+      "processes":[{
+        "id":"anchor","command":"echo ANCHOR_READY; sleep 5","ready":{"stdout":"ANCHOR_READY"},"expected_exit":0
+      }]
+    },
+    {
+      "id":"worker","target":"upstream:v6.6","arch":"x86_64",
+      "interfaces":[{"id":"net0","network":"lan0","ip":"10.77.50.12/24"}],
+      "processes":[{
+        "id":"victim","command":"echo VICTIM_READY; sleep 30","ready":{"stdout":"VICTIM_READY"},"expected_exit":0,"expected_signal":15,
+        "depends_on":[{"guest":"control","process":"anchor","state":"ready"}]
+      }]
+    }
+  ],
+  "actions":[{
+    "id":"terminate-worker","type":"signal","guest":"worker","process":"victim","signal":15,
+    "after":{"guest":"worker","process":"victim","state":"ready"}
+  }]
+}

@@ -1,0 +1,15 @@
+KLab 0.0.0b r17.9 regression checkpoint
+Date: 2026-10-07
+Command: bash tests/run-all.sh
+Result: ALL M2 NETWORK-FREE TESTS: PASS
+Shell regression scripts: 107
+BSD v1 gate: PASS
+
+Live proof added in this checkpoint:
+- FreeBSD 15.1 arm64 installed-system boot under QEMU 10.0.13
+- matching FreeBSD kernel source extracted in the guest
+- kernel_lab_hello.ko built as an ARM aarch64 ELF module
+- kldload succeeded and KLAB_FREEBSD_SMOKE_OK was observed
+
+Evidence:
+/home/reed/Documents/ChatGPT/Klab/library/bsd-evidence/freebsd-15.1-arm64/qemu10-module-smoke.log

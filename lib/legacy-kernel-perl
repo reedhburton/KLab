@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+set -euo pipefail
+real_perl="${KLAB_REAL_PERL:-$(command -v perl)}"
+[[ -x "$real_perl" ]] || { echo "legacy-kernel-perl: perl is required" >&2; exit 127; }
+if [[ $# -ge 1 && "$(basename "$1")" == timeconst.pl ]] && grep -Fq 'defined(@val)' "$1"; then
+  src="$1"; shift
+  tmp="$(mktemp)"
+  trap 'rm -f "$tmp"' EXIT
+  sed 's/!defined(@val)/!@val/' "$src" > "$tmp"
+  "$real_perl" "$tmp" "$@"
+  exit $?
+fi
+exec "$real_perl" "$@"

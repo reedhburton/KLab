@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+set -euo pipefail
+ROOT="$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)"
+bash -n "$ROOT/bsd/bsd-module-smoke.sh" "$ROOT/bsd/prepare-module-sources.sh" "$ROOT/bsd/bsd-simple.sh"
+python3 -m py_compile "$ROOT/bsd/native-ssh-smoke.py"
+grep -Fq 'MODULE(MODULE_CLASS_MISC, klab_hello, NULL)' "$ROOT/tests/bsd-modules/netbsd/klab_hello.c"
+grep -Fq 'KLAB_NETBSD_MODULE_LOADED' "$ROOT/tests/bsd-modules/netbsd/klab_hello.c"
+grep -Fq 'KLAB_NETBSD_MODULE_UNLOADED' "$ROOT/tests/bsd-modules/netbsd/klab_hello.c"
+grep -Fq 'DECLARE_MODULE(klab_hello' "$ROOT/tests/bsd-modules/dragonfly/klab_hello.c"
+grep -Fq 'KLAB_DRAGONFLY_MODULE_LOADED' "$ROOT/tests/bsd-modules/dragonfly/klab_hello.c"
+grep -Fq 'KLAB_DRAGONFLY_MODULE_UNLOADED' "$ROOT/tests/bsd-modules/dragonfly/klab_hello.c"
+grep -Fq -- "--remote-command" "$ROOT/bsd/native-ssh-smoke.py"
+grep -Fq -- "--upload" "$ROOT/bsd/native-ssh-smoke.py"
+grep -Fq -- "--cdrom" "$ROOT/bsd/native-ssh-smoke.py"
+grep -Fq 'full|minimal|ssh|module' "$ROOT/bsd/bsd-simple.sh"
+grep -Fq 'bsd-module-smoke.sh' "$ROOT/bsd/bsd-simple.sh"
+grep -Fq 'run_gate bsd_module' "$ROOT/klab-image-validate.sh"
+grep -Fq 'case "$provider" in netbsd|dragonfly)' "$ROOT/klab-image-validate.sh"
+grep -Fq '318d451ecc83749607d5448198c02663ea5f0b7f4cc74fb565747f86eead7b66b5809a37deee219dc6ddb2e5ee332d1cbb94c1a4e9db63620c3abd7586fb3057' "$ROOT/bsd/prepare-module-sources.sh"
+grep -Fq '88e07813caf95cb99f5273e2c12542a972a9e10c2fe2dbea8351695508986d25' "$ROOT/bsd/prepare-module-sources.sh"
+grep -Fq '26c450b87a38f2611191896051340b77245bf356d29b1cd67a02d423cc178d41' "$ROOT/bsd/prepare-module-sources.sh"
+echo 'BSD native module gate wiring: PASS'

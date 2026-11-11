@@ -1,0 +1,87 @@
+tier	target	os	arch	release_or_version	status_or_level	notes
+validated	upstream:v2.0.40	linux	i386	2.0.40	USERSPACE_PASS	formal legacy catalog
+validated	upstream:v2.2.26	linux	i386	2.2.26	USERSPACE_PASS	formal legacy catalog
+validated	upstream:v2.4.37.11	linux	i386	2.4.37.11	MODULE_PASS	formal legacy catalog
+validated	upstream:v2.6.0	linux	i386	2.6.0	MODULE_PASS	formal legacy catalog
+validated	upstream:v2.6.0	linux	x86_64	2.6.0	USERSPACE_PASS	formal legacy catalog
+validated	upstream:v2.6.12	linux	x86_64	2.6.12	USERSPACE_PASS	formal legacy catalog
+validated	upstream:v2.6.18	linux	x86_64	2.6.18	MODULE_PASS	formal legacy catalog
+validated	upstream:v2.6.32.71	linux	i386	2.6.32.71	NETWORK_PASS	formal legacy catalog
+validated	upstream:v2.6.32.71	linux	x86_64	2.6.32.71	NETWORK_PASS	formal legacy catalog
+validated	freebsd:15.1-RELEASE:x86_64	freebsd	x86_64	15.1-RELEASE	MODULE_PASS	formal BSD catalog
+validated	freebsd:15.1-RELEASE:aarch64	freebsd	aarch64	15.1-RELEASE	MODULE_PASS	formal BSD catalog
+validated	freebsd:14.5-RELEASE:x86_64	freebsd	x86_64	14.5-RELEASE	MODULE_PASS	formal BSD catalog
+validated	freebsd:14.5-RELEASE:i386	freebsd	i386	14.5-RELEASE	USERSPACE_PASS	formal BSD catalog
+validated	freebsd:14.5-RELEASE:riscv64	freebsd	riscv64	14.5-RELEASE	USERSPACE_PASS	formal BSD catalog
+validated	netbsd:11.0:x86_64	netbsd	x86_64	11.0	USERSPACE_PASS	formal BSD catalog
+validated	netbsd:11.0:i386	netbsd	i386	11.0	USERSPACE_PASS	formal BSD catalog
+validated	netbsd:11.0:aarch64	netbsd	aarch64	11.0	USERSPACE_PASS	formal BSD catalog
+validated	openbsd:7.9:x86_64	openbsd	x86_64	7.9	USERSPACE_PASS	formal BSD catalog
+validated	openbsd:7.9:aarch64	openbsd	aarch64	7.9	USERSPACE_PASS	formal BSD catalog
+validated	dragonfly:6.4.2:x86_64	dragonfly	x86_64	6.4.2	USERSPACE_PASS	formal BSD catalog
+validated	dragonfly:6.2.2:x86_64	dragonfly	x86_64	6.2.2	USERSPACE_PASS	formal BSD catalog
+validated	ubuntu:12.04:3.13.0-185-generic	linux	x86_64	3.13.0-185-generic	SMOKE_PASS	compat-matrix attempt12
+validated	debian:bookworm:6.12.107+deb12-amd64	linux	x86_64	6.12.107+deb12-amd64	SMOKE_PASS	compat-matrix attempt3
+validated	fedora:43:7.2.7-100.fc43.x86_64	linux	x86_64	7.2.7-100.fc43.x86_64	SMOKE_PASS	compat-matrix attempt6
+validated	alpine:3.23:6.18.53-0-lts	linux	x86_64	6.18.53-0-lts	MODULE_PASS	offline attempt4
+built	upstream:v3.0	linux	x86_64	v3.0	built	profile=normal; userspace=select-at-run; toolchain=host
+built	upstream:v3.10	linux	x86_64	v3.10	built	profile=normal; userspace=select-at-run; toolchain=host
+built	upstream:v3.12	linux	x86_64	v3.12	built	profile=normal; userspace=select-at-run; toolchain=host
+built	upstream:v3.16	linux	x86_64	v3.16	built	profile=normal; userspace=select-at-run; toolchain=host
+built	upstream:v3.18	linux	x86_64	v3.18	built	profile=normal; userspace=select-at-run; toolchain=host
+built	upstream:v3.2	linux	x86_64	v3.2	built	profile=normal; userspace=select-at-run; toolchain=host
+built	upstream:v3.4	linux	x86_64	v3.4	built	profile=normal; userspace=select-at-run; toolchain=host
+built	upstream:v3.6	linux	x86_64	v3.6	built	profile=normal; userspace=select-at-run; toolchain=host
+built	upstream:v3.8	linux	x86_64	v3.8	built	profile=normal; userspace=select-at-run; toolchain=host
+built	upstream:v4.0	linux	x86_64	v4.0	built	profile=normal; userspace=select-at-run; toolchain=host
+built	upstream:v4.10	linux	x86_64	v4.10	built	profile=normal; userspace=select-at-run; toolchain=recorded
+built	upstream:v4.12	linux	x86_64	v4.12	built	profile=normal; userspace=select-at-run; toolchain=host
+built	upstream:v4.14	linux	x86_64	v4.14	built	profile=normal; userspace=select-at-run; toolchain=host
+built	upstream:v4.16	linux	x86_64	v4.16	built	profile=normal; userspace=select-at-run; toolchain=host
+built	upstream:v4.19	linux	x86_64	v4.19	built	profile=normal; userspace=select-at-run; toolchain=host
+built	upstream:v4.1	linux	x86_64	v4.1	built	profile=normal; userspace=select-at-run; toolchain=host
+built	upstream:v4.20	linux	x86_64	v4.20	built	profile=normal; userspace=select-at-run; toolchain=host
+built	upstream:v4.4	linux	x86_64	v4.4	built	profile=normal; userspace=select-at-run; toolchain=host
+built	upstream:v4.6	linux	x86_64	v4.6	built	profile=normal; userspace=select-at-run; toolchain=host
+built	upstream:v4.9	linux	x86_64	v4.9	built	profile=normal; userspace=select-at-run; toolchain=recorded
+built	upstream:v5.0	linux	x86_64	v5.0	built	profile=normal; userspace=select-at-run; toolchain=host
+built	upstream:v5.10	linux	i386	v5.10	built	profile=normal; userspace=select-at-run; toolchain=host
+built	upstream:v5.10	linux	x86_64	v5.10	built	profile=normal; userspace=select-at-run; toolchain=host
+built	upstream:v5.12	linux	x86_64	v5.12	built	profile=normal; userspace=select-at-run; toolchain=recorded
+built	upstream:v5.15	linux	mipsel	v5.15	built	profile=normal; userspace=select-at-run; toolchain=recorded
+built	upstream:v5.15	linux	x86_64	v5.15	built	profile=normal; userspace=select-at-run; toolchain=recorded
+built	upstream:v5.18	linux	x86_64	v5.18	built	profile=normal; userspace=select-at-run; toolchain=recorded
+built	upstream:v5.4	linux	x86_64	v5.4	built	profile=normal; userspace=select-at-run; toolchain=host
+built	upstream:v5.5	linux	x86_64	v5.5	built	profile=normal; userspace=select-at-run; toolchain=host
+built	upstream:v5.8	linux	x86_64	v5.8	built	profile=normal; userspace=select-at-run; toolchain=host
+built	upstream:v6.0	linux	x86_64	v6.0	built	profile=normal; userspace=select-at-run; toolchain=recorded
+built	upstream:v6.10	linux	x86_64	v6.10	built	profile=normal; userspace=select-at-run; toolchain=recorded
+built	upstream:v6.12	linux	x86_64	v6.12	built	profile=normal; userspace=select-at-run; toolchain=recorded
+built	upstream:v6.14	linux	x86_64	v6.14	built	profile=normal; userspace=select-at-run; toolchain=recorded
+built	upstream:v6.18	linux	x86_64	v6.18	built	profile=normal; userspace=select-at-run; toolchain=recorded
+built	upstream:v6.1	linux	x86_64	v6.1	built	profile=normal; userspace=select-at-run; toolchain=recorded
+built	upstream:v6.3	linux	x86_64	v6.3	built	profile=normal; userspace=select-at-run; toolchain=recorded
+built	upstream:v6.5	linux	x86_64	v6.5	built	profile=normal; userspace=select-at-run; toolchain=recorded
+built	upstream:v6.6	linux	x86_64	v6.6	built	profile=normal; userspace=select-at-run; toolchain=recorded
+built	upstream:v6.8	linux	x86_64	v6.8	built	profile=normal; userspace=select-at-run; toolchain=recorded
+built	upstream:v7.0	linux	x86_64	v7.0	built	profile=normal; userspace=select-at-run; toolchain=recorded
+built	upstream:v7.1	linux	x86_64	v7.1	built	profile=normal; userspace=select-at-run; toolchain=recorded
+built	upstream:v7.2.7	linux	x86_64	v7.2.7	built	profile=normal; userspace=select-at-run; toolchain=recorded
+built	upstream:v7.2	linux	x86_64	v7.2	built	profile=normal; userspace=select-at-run; toolchain=recorded
+provider	alpine	varies	varies	dynamic	IMPLEMENTED	APK linux-lts / native musl
+provider	centos	varies	varies	dynamic	IMPLEMENTED	CentOS 7.9 Vault and Stream/newer dnf
+provider	debian	varies	varies	dynamic	IMPLEMENTED	APT current and snapshot
+provider	fedora	varies	varies	dynamic	IMPLEMENTED	Koji exact kernel/buildroot provenance
+provider	freebsd	varies	varies	dynamic	IMPLEMENTED	official release artifacts
+provider	rhel	varies	varies	dynamic	IMPLEMENTED	entitled explicit build-tree contract
+provider	ubuntu	varies	varies	dynamic	IMPLEMENTED	APT current
+provider	upstream	varies	varies	dynamic	IMPLEMENTED	kernel.org source tags
+architecture	x86_64	varies	x86_64	dynamic	STABLE	QEMU=ready/KVM; Linux=upstream+distro; FreeBSD=automated
+architecture	i386	varies	i386	dynamic	STABLE	QEMU=ready/KVM; Linux=upstream; FreeBSD=validated legacy + BSD
+architecture	aarch64	varies	aarch64	dynamic	STABLE	QEMU=ready; Linux=upstream; FreeBSD=automated FreeBSD
+architecture	armv7	varies	armv7	dynamic	STABLE	QEMU=ready; Linux=upstream; FreeBSD=media/manual
+architecture	mips	varies	mips	dynamic	EXPERIMENTAL	QEMU=ready; Linux=upstream experimental; FreeBSD=n/a
+architecture	mipsel	varies	mipsel	dynamic	EXPERIMENTAL	QEMU=ready; Linux=upstream experimental; FreeBSD=n/a
+architecture	mips64	varies	mips64	dynamic	EXPERIMENTAL	QEMU=ready; Linux=upstream experimental; FreeBSD=n/a
+architecture	mips64el	varies	mips64el	dynamic	EXPERIMENTAL	QEMU=ready; Linux=upstream experimental; FreeBSD=n/a
+architecture	riscv64	freebsd	riscv64	14.5-RELEASE	USERSPACE_PASS	validated BSD path via isolated QEMU 10; absent from generic architecture catalog

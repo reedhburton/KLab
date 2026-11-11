@@ -5,8 +5,10 @@ kernel targets, captures their build dependencies and userspaces, transfers them
 offline machines, builds kernel modules and C programs, boots isolated guests, and
 runs repeatable compatibility suites.
 
-The current tree is a **release candidate**. A final version number will be assigned
-after the clean-drive offline reconstruction and validation pass.
+The current tree is **KLab 1.0.0-rc14**. Its 137-entry upstream
+kernel/architecture matrix has complete live validation evidence. The wider target
+catalog is also visible, with each entry labeled so packaged or experimental targets
+are not mistaken for fully validated support.
 
 ## What KLab tests
 
@@ -43,11 +45,36 @@ The normal setup has only two user-managed locations:
 For a distribution kernel:
 
 ```bash
-./klab pull ubuntu:24.04:6.8.0-85-generic --arch x86_64
+./klab pull ubuntu:24.04:6.8.0-142-generic --arch x86_64
 ./klab load
-./klab build ubuntu:24.04:6.8.0-85-generic ./examples/hello-module
-./klab run ubuntu:24.04:6.8.0-85-generic
+./klab build ubuntu:24.04:6.8.0-142-generic ./examples/hello-module
+./klab run ubuntu:24.04:6.8.0-142-generic
 ```
+
+## Find a target
+
+Use the CLI for targets available on the current machine:
+
+```bash
+./klab targets       # imported and immediately runnable targets
+./klab repo list     # portable targets in the configured offline repository
+```
+
+Use **[TARGETS.md](TARGETS.md)** to browse target families, understand validation
+states, and filter the complete **[machine-readable catalog](catalog/current-target-inventory-2026-11-04.tsv)**.
+A target ID includes the provider, release, and exact kernel when applicable:
+
+```text
+upstream:v6.6
+ubuntu:24.04:6.8.0-142-generic
+debian:bookworm:6.1.0-53-amd64
+fedora:43:7.2.7-100.fc43.x86_64
+freebsd:14.5-RELEASE:x86_64
+```
+
+`validated` means current test evidence exists. `packaged` means a portable artifact
+exists but does not claim every release gate. `local` means files are present in this
+lab and may still require packaging or validation.
 
 ## Common commands
 
@@ -79,7 +106,7 @@ klab bsd <list|status>
 ```bash
 ssh-keygen -t ed25519 -f "$HOME/.ssh/klab" -N ''
 
-./klab start ubuntu:24.04:6.8.0-85-generic \
+./klab start ubuntu:24.04:6.8.0-142-generic \
   --name ubuntu-test \
   --userspace native:ubuntu:24.04 \
   --ssh-auth key --ssh-key "$HOME/.ssh/klab" \
@@ -99,7 +126,7 @@ $EDITOR "$HOME/klab/suites/driver-test/test.sh"
 
 ./klab test driver-test on \
   ubuntu:22.04:5.15.0-176-generic@x86_64 \
-  ubuntu:24.04:6.8.0-85-generic@x86_64
+  ubuntu:24.04:6.8.0-142-generic@x86_64
 ```
 
 Suite scripts are ordinary controller-side Bash. Target execution is explicit:
@@ -119,7 +146,7 @@ See [USER-GUIDE.md](USER-GUIDE.md) for complete suite examples.
 ```bash
 ./klab export container \
   --target ubuntu:22.04:5.15.0-176-generic@x86_64 \
-  --target ubuntu:24.04:6.8.0-85-generic@x86_64 \
+  --target ubuntu:24.04:6.8.0-142-generic@x86_64 \
   --profile full \
   --output klab-ubuntu-ci.oci.tar
 ```
@@ -133,6 +160,7 @@ Module insertion still requires a matching host kernel or the included QEMU gues
 - **[USER-GUIDE.md](USER-GUIDE.md)** — installation, workflows, examples, suites,
   containers, offline operation, and troubleshooting
 - [QUICKSTART.md](QUICKSTART.md) — concise first-use workflow
+- **[TARGETS.md](TARGETS.md)** — target discovery, states, families, and filtering
 - [CONTROLLER-TESTS.md](CONTROLLER-TESTS.md) — readable Bash suite language
 - [TEST-SUITES.md](TEST-SUITES.md) — scenario and queue internals
 - [IMAGE-QUALIFICATION.md](IMAGE-QUALIFICATION.md) — standard and full gates

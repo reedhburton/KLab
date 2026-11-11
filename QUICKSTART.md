@@ -46,6 +46,10 @@ A single artifact can be loaded directly:
 ./klab load /path/to/ubuntu-24.04.klab
 ```
 
+To choose a target, run `./klab targets` for imported targets or `./klab repo list`
+for portable offline artifacts. See [TARGETS.md](TARGETS.md) for the complete catalog,
+validation-state meanings, and filtering examples.
+
 Loading verifies checksums and imports atomically. Removable archive files are staged automatically into the internal cache and are never deleted by cache pruning.
 
 ## 3. Build a kernel module

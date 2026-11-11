@@ -59,4 +59,4 @@ This inventory merges complete local `bundle.env` targets, physically inspected 
 | packaged | 490 |
 | validated | 151 |
 
-Exact rows: `/home/reed/klab/results/current-target-inventory-2026-11-04.tsv`.
+Exact rows: [`current-target-inventory-2026-11-04.tsv`](current-target-inventory-2026-11-04.tsv).

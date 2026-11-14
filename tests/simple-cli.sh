@@ -55,6 +55,9 @@ grep -Fq "bsd pull freebsd:14.5-RELEASE:riscv64 $T/repo" "$T/runner.log"
 grep -Fq "bsd run freebsd:14.5-RELEASE:riscv64 $T/repo $T/root" "$T/runner.log"
 ! grep -Fq 'prepare freebsd:14.5-RELEASE:riscv64' "$T/runner.log"
 [[ "$(KLAB_ROOT="$T/root" KLAB_RUNNER="$fake" "$ROOT/klab" repo path)" == "$T/repo" ]]
+KLAB_ROOT="$T/root" KLAB_RUNNER="$fake" "$ROOT/klab" repo snapshot cli-base >/dev/null
+KLAB_ROOT="$T/root" KLAB_RUNNER="$fake" "$ROOT/klab" repo export-release cli-base -o "$T/cli-base.tar.zst" >/dev/null
+[[ -s "$T/cli-base.tar.zst" && -s "$T/cli-base.tar.zst.sha256" ]]
 KLAB_ROOT="$T/root" KLAB_RUNNER="$fake" "$ROOT/klab" legacy list | grep -q 'linux-2.0.40-i386'
 KLAB_ROOT="$T/root" KLAB_RUNNER="$fake" "$ROOT/klab" legacy plan linux-2.6.32-x86_64 | grep -q 'NETWORK_PASS'
 echo 'simple-cli: PASS'

@@ -217,7 +217,7 @@ klab_simple_repo_cmd() {
     cache-status) python3 "$KLAB_SELF_DIR/tools/klab-stage.py" status ;;
     cache-prune) python3 "$KLAB_SELF_DIR/tools/klab-stage.py" prune "$@" ;;
     snapshot) (($# >= 1)) || { echo 'usage: klab repo snapshot NAME [--parent NAME]' >&2; return 2; }; local name="$1"; shift; python3 "$KLAB_SELF_DIR/tools/klab-repo-release.py" snapshot "$repo" "$name" "$@" ;;
-    export-release) (($# >= 3 && "$2" == -o)) || { echo 'usage: klab repo export-release NAME -o FILE.tar.zst' >&2; return 2; }; python3 "$KLAB_SELF_DIR/tools/klab-repo-release.py" export "$repo" "$1" -o "$3" ;;
+    export-release) (($# >= 3)) && [[ "$2" == -o ]] || { echo 'usage: klab repo export-release NAME -o FILE.tar.zst' >&2; return 2; }; python3 "$KLAB_SELF_DIR/tools/klab-repo-release.py" export "$repo" "$1" -o "$3" ;;
     apply-release) (($# >= 1)) || { echo 'usage: klab repo apply-release FILE.tar.zst [--apply-removals]' >&2; return 2; }; local archive="$1"; shift; python3 "$KLAB_SELF_DIR/tools/klab-repo-release.py" apply "$repo" "$archive" "$@" ;;
     releases) python3 "$KLAB_SELF_DIR/tools/klab-repo-release.py" list "$repo" ;;
     *) echo 'usage: klab repo <path|list|index|snapshot|export-release|apply-release|releases|volume-add|volumes|stage|cache-status|cache-prune>' >&2; return 2 ;;

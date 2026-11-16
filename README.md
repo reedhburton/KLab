@@ -5,7 +5,7 @@ kernel targets, captures their build dependencies and userspaces, transfers them
 offline machines, builds kernel modules and C programs, boots isolated guests, and
 runs repeatable compatibility suites.
 
-The current tree is **KLab 1.0.0-rc14**. Its 137-entry upstream
+The current tree is **KLab 1.0.0**. Its 137-entry upstream
 kernel/architecture matrix has complete live validation evidence. The wider target
 catalog is also visible, with each entry labeled so packaged or experimental targets
 are not mistaken for fully validated support.

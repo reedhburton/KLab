@@ -30,7 +30,10 @@ grep -Fq 'tar -xzf "$sdkdest" -C "$sdkdir" --strip-components=1' "$ROOT/klab-bun
 grep -Fq 'chmod -R u+w "$path"' "$ROOT/klab-bundle.sh"
 grep -Fq 'TARGET OUTPUT.klab [OFFLINE_ROOT] [ARCH]' "$ROOT/beta-tools/offline-repack-klab.sh"
 grep -Fq 'KLAB_ARCH="$arch"' "$ROOT/beta-tools/offline-repack-klab.sh"
-grep -Fq 'source "$(dirname "$build")/bundle.env"' "$ROOT/beta-tools/offline-repack-klab.sh"
+grep -Fq 'source "$bundle_dir/bundle.env"' "$ROOT/beta-tools/offline-repack-klab.sh"
+grep -Fq 'Kernel image:' "$ROOT/beta-tools/offline-repack-klab.sh"
 grep -Fq 'args+=(--include-sdk)' "$ROOT/beta-tools/offline-repack-klab.sh"
+grep -Fq 'userspace=buildroot:minimal' "$ROOT/beta-tools/offline-repack-klab.sh"
+grep -Fq 'artifacts/userspaces/busybox/$arch/busybox' "$ROOT/beta-tools/offline-repack-klab.sh"
 grep -Fq -- '--include-toolchain "$BUNDLE_TOOLCHAIN_DIR"' "$ROOT/beta-tools/offline-repack-klab.sh"
 echo 'installer-wiring: PASS'

@@ -57,6 +57,17 @@ def snapshot(args):
     tmp=out.with_suffix('.tmp'); tmp.write_text(json.dumps(doc,indent=2,sort_keys=True)+'\n'); os.replace(tmp,out)
     print(f"snapshot={args.name} files={len(entries)} changed={len(changed)} removed={len(removed)} sha256={doc['snapshot_sha256']}")
 
+def squash(args):
+    repo=Path(args.repo).resolve(); source=load(repo,args.source); out=snap_path(repo,args.name)
+    if out.exists(): raise SystemExit(f'release is immutable and already exists: {args.name}')
+    doc=dict(source); doc['name']=args.name; doc['parent']=None
+    doc['created_utc']=datetime.datetime.now(datetime.timezone.utc).isoformat(); doc['klab_commit']=klab_commit()
+    doc['delta']={'changed':[x['path'] for x in doc['files']],'removed':[]}
+    doc.pop('snapshot_sha256',None)
+    canonical=json.dumps(doc,sort_keys=True,separators=(',',':')).encode(); doc['snapshot_sha256']=hashlib.sha256(canonical).hexdigest()
+    tmp=out.with_suffix('.tmp'); tmp.write_text(json.dumps(doc,indent=2,sort_keys=True)+'\n'); os.replace(tmp,out)
+    print(f"snapshot={args.name} files={len(doc['files'])} changed={len(doc['files'])} removed=0 sha256={doc['snapshot_sha256']} source={args.source}")
+
 def export_release(args):
     repo=Path(args.repo).resolve(); doc=load(repo,args.name); out=Path(args.output).resolve()
     paths=doc['delta']['changed'] if doc.get('parent') else [x['path'] for x in doc['files']]
@@ -105,6 +116,7 @@ def releases(args):
 def main():
     ap=argparse.ArgumentParser(); sub=ap.add_subparsers(dest='cmd',required=True)
     p=sub.add_parser('snapshot'); p.add_argument('repo'); p.add_argument('name'); p.add_argument('--parent'); p.set_defaults(fn=snapshot)
+    p=sub.add_parser('squash'); p.add_argument('repo'); p.add_argument('source'); p.add_argument('name'); p.set_defaults(fn=squash)
     p=sub.add_parser('export'); p.add_argument('repo'); p.add_argument('name'); p.add_argument('-o','--output',required=True); p.set_defaults(fn=export_release)
     p=sub.add_parser('apply'); p.add_argument('repo'); p.add_argument('archive'); p.add_argument('--apply-removals',action='store_true'); p.set_defaults(fn=apply_release)
     p=sub.add_parser('list'); p.add_argument('repo'); p.set_defaults(fn=releases)

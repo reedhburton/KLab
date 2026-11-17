@@ -24,9 +24,9 @@ whole repository with `./klab load`.
 
 ## What targets are known to this release?
 
-The [complete catalog](catalog/current-target-inventory-2026-11-04.tsv) contains 658
+The [complete catalog](catalog/current-target-inventory-2026-11-16.tsv) contains 658
 exact target/architecture pairs. It is TSV so it remains easy to search, sort, or feed
-to scripts. The [inventory summary](catalog/current-target-inventory-2026-11-04.md)
+to scripts. The [inventory summary](catalog/current-target-inventory-2026-11-16.md)
 breaks the catalog down by provider, architecture, Ubuntu release, and state.
 
 The release-candidate catalog includes:
@@ -95,21 +95,21 @@ Show validated targets:
 
 ```bash
 awk -F '\t' 'NR == 1 || $4 == "validated"' \
-  catalog/current-target-inventory-2026-11-04.tsv | column -t -s $'\t'
+  catalog/current-target-inventory-2026-11-16.tsv | column -t -s $'\t'
 ```
 
 Show Ubuntu 24.04 x86-64 kernels:
 
 ```bash
 awk -F '\t' 'NR == 1 || ($1 ~ /^ubuntu:24[.]04:/ && $2 == "x86_64")' \
-  catalog/current-target-inventory-2026-11-04.tsv | column -t -s $'\t'
+  catalog/current-target-inventory-2026-11-16.tsv | column -t -s $'\t'
 ```
 
 Show every BSD target:
 
 ```bash
 awk -F '\t' 'NR == 1 || $3 ~ /^(freebsd|netbsd|openbsd|dragonfly)$/' \
-  catalog/current-target-inventory-2026-11-04.tsv | column -t -s $'\t'
+  catalog/current-target-inventory-2026-11-16.tsv | column -t -s $'\t'
 ```
 
 If `column` is unavailable, omit the final pipe; the output remains valid TSV.

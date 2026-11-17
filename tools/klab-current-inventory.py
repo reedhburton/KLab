@@ -29,8 +29,8 @@ def main():
         merged[key] = {
             "target": key[0], "arch": key[1], "family": family,
             "state": item["state"], "local_target": "no",
-            "offline_artifact": "no", "sources": set(filter(None, item["sources"].split(","))),
-            "evidence": list(filter(None, item["evidence"].split(" | "))),
+            "offline_artifact": "no", "sources": set(filter(None, (item.get("sources") or "").split(","))),
+            "evidence": list(filter(None, (item.get("evidence") or "").split(" | "))),
         }
 
     physical = {}

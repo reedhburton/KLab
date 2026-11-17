@@ -6,6 +6,7 @@ cat >"$T/base.tsv" <<'TSV'
 target	arch	family	state	offline_artifact	sources	evidence
 ubuntu:24.04:old-generic	x86_64	linux	validated	yes	exact-guest-matrix	validated
 TSV
+printf 'upstream:v6.6\tarmv7\tupstream-linux\tpackaged\tno\t\t\n' >>"$T/base.tsv"
 cat >"$T/local.tsv" <<'TSV'
 target	arch	file
 ubuntu:24.04:old-generic	x86_64	/cache/old/bundle.env
@@ -19,7 +20,8 @@ TSV
 python3 - "$T/out.tsv" <<'PY'
 import csv,sys
 r={(x['target'],x['arch']):x for x in csv.DictReader(open(sys.argv[1]),delimiter='\t')}
-assert len(r)==2
+assert len(r)==3
+assert r['upstream:v6.6','armv7']['evidence']==''
 old=r['ubuntu:24.04:old-generic','x86_64']
 new=r['ubuntu:24.04:new-generic','x86_64']
 assert old['state']=='validated' and old['local_target']=='yes' and old['offline_artifact']=='no'

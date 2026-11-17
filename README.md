@@ -61,7 +61,7 @@ Use the CLI for targets available on the current machine:
 ```
 
 Use **[TARGETS.md](TARGETS.md)** to browse target families, understand validation
-states, and filter the complete **[machine-readable catalog](catalog/current-target-inventory-2026-11-04.tsv)**.
+states, and filter the complete **[machine-readable catalog](catalog/current-target-inventory-2026-11-16.tsv)**.
 A target ID includes the provider, release, and exact kernel when applicable:
 
 ```text

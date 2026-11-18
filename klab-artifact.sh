@@ -72,10 +72,10 @@ PY_JSONGET
 canonical_pack(){
   local src="$1" out="$2"
   if [[ -d "$src" ]]; then
-    tar -C "$src" --sort=name --mtime='UTC 1970-01-01' --owner=0 --group=0 --numeric-owner --pax-option=delete=atime,delete=ctime -cf - . | zstd -q -T0 -6 -o "$out"
+    tar -C "$src" --sort=name --mtime='UTC 1970-01-01' --owner=0 --group=0 --numeric-owner --pax-option=delete=atime,delete=ctime -cf - . | zstd -q -T"${KLAB_ZSTD_THREADS:-0}" -6 -o "$out"
   elif [[ -f "$src" ]]; then
     local d b; d="$(dirname "$src")"; b="$(basename "$src")"
-    tar -C "$d" --sort=name --mtime='UTC 1970-01-01' --owner=0 --group=0 --numeric-owner --pax-option=delete=atime,delete=ctime -cf - "$b" | zstd -q -T0 -6 -o "$out"
+    tar -C "$d" --sort=name --mtime='UTC 1970-01-01' --owner=0 --group=0 --numeric-owner --pax-option=delete=atime,delete=ctime -cf - "$b" | zstd -q -T"${KLAB_ZSTD_THREADS:-0}" -6 -o "$out"
   else die "source path not found: $src"; fi
 }
 

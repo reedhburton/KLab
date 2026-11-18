@@ -66,7 +66,7 @@ if [[ "$level" != quick && "$backend" == bsd-simple ]]; then
 fi
 if [[ "$level" != quick && "$backend" == linux ]]; then
  linux_gate_userspace=buildroot:minimal
- case "$target" in upstream:v2.0.40|upstream:v2.2.26) linux_gate_userspace=busybox-static;; esac
+ case "$target" in upstream:v2.0.40|upstream:v2.2.26|upstream:v2.6.0) linux_gate_userspace=busybox-static;; esac
  run_gate module_process 2400 "$KLAB_BIN" test "$target" --arch "$arch" --module "$SELF/tests/all-five/module" --script "$SELF/tests/all-five/workload.sh" --userspace "$linux_gate_userspace" || true
  run_gate two_guest_tcp 1200 "$SELF/klab-image-tcp-gate.sh" "$target" "$arch" "$report/tcp-report" || true
 fi
@@ -93,7 +93,7 @@ if [[ "$level" == full && "$backend" == linux ]]; then
  if [[ "$userspace" == auto ]]; then
   if [[ "$target" == *:*:* && "$provider" != upstream && "$provider" != custom ]]; then
    userspace="native:$provider:$release"
-  elif [[ "$target" == upstream:v2.0.40 || "$target" == upstream:v2.2.26 ]]; then
+  elif [[ "$target" == upstream:v2.0.40 || "$target" == upstream:v2.2.26 || "$target" == upstream:v2.6.0 ]]; then
    userspace=busybox-static; conformance="$SELF/klab-buildroot-conformance.sh"
   else
    userspace=buildroot:minimal; conformance="$SELF/klab-buildroot-conformance.sh"
@@ -110,7 +110,7 @@ PY
   check='uname -r; uname -m; printf KLAB_SSH_PASS'; [[ "$provider" == upstream || "$provider" == custom ]] || check="test \"\$(uname -r)\" = '${target##*:}'; uname -m; printf KLAB_SSH_PASS"
   ssh_compat=(-o HostkeyAlgorithms=+ssh-rsa -o PubkeyAcceptedAlgorithms=+ssh-rsa)
   case "$target" in
-   upstream:v2.0.40|upstream:v2.2.26) ssh_compat=(-o HostkeyAlgorithms=ssh-rsa -o PubkeyAcceptedAlgorithms=ssh-rsa -o KexAlgorithms=diffie-hellman-group1-sha1 -o Ciphers=aes128-cbc -o MACs=hmac-sha1 -o Compression=no);;
+   upstream:v2.0.40|upstream:v2.2.26|upstream:v2.6.0) ssh_compat=(-o HostkeyAlgorithms=ssh-rsa -o PubkeyAcceptedAlgorithms=ssh-rsa -o KexAlgorithms=diffie-hellman-group1-sha1 -o Ciphers=aes128-cbc -o MACs=hmac-sha1 -o Compression=no);;
   esac
   run_gate interactive_ssh 120 ssh -i "$key" -p "$port" -o ConnectTimeout=10 -o BatchMode=yes -o IdentitiesOnly=yes -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null "${ssh_compat[@]}" root@127.0.0.1 "$check" || true
  else

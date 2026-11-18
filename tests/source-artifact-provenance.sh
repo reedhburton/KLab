@@ -2,7 +2,15 @@
 set -Eeuo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"; T="$(mktemp -d)"; trap 'rm -rf "$T"' EXIT
 mkdir -p "$T/src"; printf 'obj-m += example.o\n' > "$T/src/Makefile"
-KLAB_ROOT="$T/root" KLAB_HOME="$T/root" "$ROOT/klab-artifact.sh" create source --from "$T/src" --name linux-6.6 --arch x86_64 --provider upstream --release v6.6 --kernel-release 6.6.0 --provenance 'kernel.org tag v6.6' -o "$T/linux.klabsource" >/dev/null
+mkdir -p "$T/bin"
+cat > "$T/bin/zstd" <<'SH'
+#!/usr/bin/env bash
+printf '%s\n' "$*" >> "$KLAB_TEST_ZSTD_ARGS"
+exec /usr/bin/zstd "$@"
+SH
+chmod +x "$T/bin/zstd"
+KLAB_TEST_ZSTD_ARGS="$T/zstd.args" KLAB_ZSTD_THREADS=1 PATH="$T/bin:$PATH" KLAB_ROOT="$T/root" KLAB_HOME="$T/root" "$ROOT/klab-artifact.sh" create source --from "$T/src" --name linux-6.6 --arch x86_64 --provider upstream --release v6.6 --kernel-release 6.6.0 --provenance 'kernel.org tag v6.6' -o "$T/linux.klabsource" >/dev/null
+grep -Fq -- '-T1' "$T/zstd.args"
 KLAB_ROOT="$T/root" KLAB_HOME="$T/root" "$ROOT/klab-artifact.sh" inspect "$T/linux.klabsource" --json > "$T/manifest.json"
 python3 - "$T/manifest.json" <<'PY'
 import json,sys

@@ -14,6 +14,9 @@ grep -Fq 'chmod 700 /root /root/.ssh' "$f"
 ! grep -Fq 'usermod -p x root' "$f"
 grep -Fq '[[ "$normalized_ssh_userspace" == buildroot:* || "$normalized_ssh_userspace" == native:* ||' "$f"
 grep -Fq '( "$normalized_ssh_userspace" == busybox-static && ( "$target" == upstream:v2.0.40 || "$target" == upstream:v2.2.26 ) )' "$f"
+grep -Fq 'upstream:v2.0.40|upstream:v2.2.26|upstream:v2.6.0) linux_gate_userspace=busybox-static' "$ROOT/klab-image-validate.sh"
+grep -Fq '"$target" == upstream:v2.0.40 || "$target" == upstream:v2.2.26 || "$target" == upstream:v2.6.0' "$ROOT/klab-image-validate.sh"
+grep -Fq 'upstream:v2.0.40|upstream:v2.2.26|upstream:v2.6.0) ssh_compat=' "$ROOT/klab-image-validate.sh"
 echo 'native Dropbear fallback model: PASS'
 
 # Early 2.6 x86 kernels through 2.6.34 use the sealed i386 2020.81 multicall binary; old

@@ -45,6 +45,10 @@ The release-candidate catalog includes:
 | DragonFly BSD | 2 |
 | Arch Linux | 4 |
 
+## Kernel source coverage
+
+The [source coverage ledger](catalog/source-coverage-2026-11-17.tsv) records whether each exact target has a full source tree, an official source archive, only an external-module build tree, or a pending source acquisition. Shared `.klabsource` objects are content-addressed and may be referenced by multiple targets without duplication.
+
 ## Status meanings
 
 | State | Meaning |

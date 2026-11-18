@@ -32,7 +32,10 @@ Usage:
   klab-artifact.sh create rootfs    --from PATH --arch ARCH --spec SPEC [--buildroot-version VER] [--profile NAME] [-o FILE.klabrootfs]
   klab-artifact.sh create sdk       --from DIR --arch ARCH [--buildroot-version VER] [--profile NAME] [-o FILE.klabsdk]
   klab-artifact.sh create firmware  --from PATH [--name NAME] [--arch ARCH] [-o FILE.klabfirmware]
-  klab-artifact.sh create source    --from PATH [--name NAME] [--arch ARCH] [-o FILE.klabsource]
+  klab-artifact.sh create source    --from PATH [--name NAME] [--arch ARCH]
+                                    [--provider NAME] [--release VERSION]
+                                    [--kernel-release VERSION] [--provenance TEXT]
+                                    [-o FILE.klabsource]
 
   klab-artifact.sh thinify FILE.klab [--output FILE.klab] [--artifact-dir DIR]
   klab-artifact.sh verify  FILE
@@ -100,11 +103,13 @@ PY_TC
 create(){
   need; (($#>=1)) || die "create needs an artifact type"
   local type="$1"; shift; artifact_ext "$type" >/dev/null
-  local src="" name="" arch="" output="" spec="" brver="" profile="" compat_id="" tc='{}'
+  local src="" name="" arch="" output="" spec="" brver="" profile="" compat_id="" tc='{}' provider="" release="" kernel_release="" provenance=""
   while (($#)); do case "$1" in
     --from) src="$2"; shift 2;; --name) name="$2"; shift 2;; --arch) arch="$(canonical_arch "$2")"; shift 2;;
     --spec) spec="$2"; shift 2;; --buildroot-version) brver="$2"; shift 2;; --profile) profile="$2"; shift 2;;
-    --compat-id) compat_id="$2"; shift 2;; -o|--output) output="$2"; shift 2;; *) die "unknown create option '$1'";; esac; done
+    --compat-id) compat_id="$2"; shift 2;; --provider) provider="$2"; shift 2;; --release) release="$2"; shift 2;;
+    --kernel-release) kernel_release="$2"; shift 2;; --provenance) provenance="$2"; shift 2;;
+    -o|--output) output="$2"; shift 2;; *) die "unknown create option '$1'";; esac; done
   [[ -n "$src" ]] || die "create requires --from PATH"; src="$(python3 -c 'import os,sys; print(os.path.abspath(sys.argv[1]))' "$src")"; [[ -e "$src" ]] || die "source path not found: $src"
   [[ -n "$name" ]] || name="$(basename "$src")"
   local ext; ext="$(artifact_ext "$type")"; [[ -n "$output" ]] || output="$PWD/$(sanitize "$name").$ext"; [[ "$output" == *.$ext ]] || output="$output.$ext"
@@ -112,14 +117,16 @@ create(){
   local st payload psha obj kind; st="$(mktemp -d)"; mkdir -p "$st/payload"; payload="$st/payload/content.tar.zst"
   canonical_pack "$src" "$payload"; psha="$(sha "$payload")"; obj="sha256:$psha"; [[ -d "$src" ]] && kind=directory || kind=file
   [[ "$type" == toolchain ]] && tc="$(probe_toolchain "$src" "$compat_id")"
-  python3 - "$st/manifest.json" "$type" "$obj" "$name" "$arch" "$kind" "$psha" "$spec" "$brver" "$profile" "$tc" <<'PY_MANIFEST'
+  python3 - "$st/manifest.json" "$type" "$obj" "$name" "$arch" "$kind" "$psha" "$spec" "$brver" "$profile" "$tc" "$provider" "$release" "$kernel_release" "$provenance" <<'PY_MANIFEST'
 import json,sys,datetime
-out,typ,obj,name,arch,kind,psha,spec,brver,profile,tc=sys.argv[1:]
+out,typ,obj,name,arch,kind,psha,spec,brver,profile,tc,provider,release,kernel_release,provenance=sys.argv[1:]
 m={"format":"kernel-lab-shared-artifact","format_version":1,"created_at":datetime.datetime.now(datetime.timezone.utc).replace(microsecond=0).isoformat().replace('+00:00','Z'),"artifact_type":typ,"object_id":obj,"name":name,"arch":arch or None,"payload":{"path":"payload/content.tar.zst","sha256":psha,"source_kind":kind},"metadata":{}}
 if spec:m["metadata"]["userspace_spec"]=spec
 if brver:m["metadata"]["buildroot_version"]=brver
 if profile:m["metadata"]["profile"]=profile
 if typ=="toolchain":m["metadata"].update(json.loads(tc))
+if typ=="source":
+    m["metadata"].update({k:v for k,v in {"provider":provider,"release":release,"kernel_release":kernel_release,"provenance":provenance}.items() if v})
 json.dump(m,open(out,'w',encoding='utf-8'),indent=2,sort_keys=True);open(out,'a').write('\n')
 PY_MANIFEST
   printf '%s\n' "$FORMAT_VERSION" > "$st/FORMAT_VERSION"; (cd "$st" && sha256sum manifest.json payload/content.tar.zst > SHA256SUMS)

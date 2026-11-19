@@ -934,7 +934,7 @@ ensure_native_dropbear() {
   fi
   actual="$(sha256sum "$archive" | awk '{print $1}')"; [[ "$actual" == "$DROPBEAR_SHA256" ]] || die "Dropbear source checksum mismatch"
   sdk="$(ensure_buildroot_sdk "$arch" minimal)" || die "could not obtain the $arch static SDK for Dropbear"
-  cc="$(find "$sdk/bin" -maxdepth 1 -name '*-buildroot-linux-musl-gcc' -print | head -n1)"; [[ -x "$cc" ]] || die "Buildroot SDK lacks a musl compiler for $arch"
+  cc="$(find "$sdk/bin" -maxdepth 1 -name '*-buildroot-linux-musl*-gcc' -print | head -n1)"; [[ -x "$cc" ]] || die "Buildroot SDK lacks a musl compiler for $arch"
   host="$(basename "$cc" -gcc)"; build="$BUILDROOT_HOME/dropbear-build/$DROPBEAR_VERSION/$arch"; rm -rf "$build"; mkdir -p "$build"
   tar -xjf "$archive" -C "$build" --strip-components=1 || die "could not extract Dropbear source"
   printf '%s\n' '#define DEFAULT_PATH "/usr/sbin:/usr/bin:/sbin:/bin"' >> "$build/localoptions.h"
@@ -6513,7 +6513,7 @@ cmd_boot_session() {
       normalized_ssh_userspace="$(normalize_userspace_spec "$userspace")"
       if [[ "$normalized_ssh_userspace" != auto ]]; then
         [[ "$normalized_ssh_userspace" == buildroot:* || "$normalized_ssh_userspace" == native:* ||
-           ( "$normalized_ssh_userspace" == busybox-static && ( "$target" == upstream:v2.0.40 || "$target" == upstream:v2.2.26 ) ) ]] ||
+           ( "$normalized_ssh_userspace" == busybox-static && ( "$target" == upstream:v2.0.40 || "$target" == upstream:v2.2.26 || "$target" == upstream:v2.6.0 ) ) ]] ||
           die "SSH requires Buildroot, native:PROVIDER:RELEASE, or the sealed Linux 2.0/2.2 compatibility userspace"
       fi
     elif [[ "$ssh_auth" != key ]]; then

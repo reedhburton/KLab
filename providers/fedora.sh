@@ -160,14 +160,13 @@ PY_INV
 
 klab_provider_fedora_ensure_execution_supplements(){
   local repo="$1" release="$2" hub="$3" topurl="$4" image owner qhub qtop state release_image
-  [[ "$release" == 26 ]] || return 0
   state="$(dirname "$repo")"
-  [[ -f "$state/EXECUTION-SUPPLEMENTS-FC26-V2" ]] && return 0
+  [[ -f "$state/EXECUTION-SUPPLEMENTS-V3" ]] && return 0
   image="${KLAB_FEDORA_KOJI_IMAGE:-fedora:43}"
   release_image="$(provider_image fedora "$release")"
   owner="$(klab_provider_bind_output_owner)"
   printf -v qhub '%q' "$hub"; printf -v qtop '%q' "$topurl"
-  say "Completing reconstructed Koji repo with exact Fedora 26 execution-root RPMs"
+  say "Completing reconstructed Koji repo with exact Fedora $release execution-root RPMs"
   run_container_root "$release_image" -v "$state:/out" bash -lc "set -eu
     rpm -qa --qf '%{NAME}\\t%{EPOCHNUM}:%{VERSION}-%{RELEASE}\\t%{ARCH}\\t%{VERSION}\\t%{RELEASE}\\n' | LC_ALL=C sort -u >/out/execution-installed.tsv
     chown '$owner' /out/execution-installed.tsv"
@@ -214,7 +213,7 @@ if missing: raise SystemExit('Koji execution supplements missing exact identitie
 PY_KEEP
     rm -rf /out/state/execution-new /out/repo/repodata
     createrepo_c --quiet --compatibility --database --general-compress-type=gz /out/repo
-    touch /out/state/EXECUTION-SUPPLEMENTS-FC26-V2
+    touch /out/state/EXECUTION-SUPPLEMENTS-V3
     chown -R '$owner' /out"
 }
 

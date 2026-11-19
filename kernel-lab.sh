@@ -937,7 +937,12 @@ ensure_native_dropbear() {
   cc="$(find "$sdk/bin" -maxdepth 1 -name '*-buildroot-linux-musl*-gcc' -print | head -n1)"; [[ -x "$cc" ]] || die "Buildroot SDK lacks a musl compiler for $arch"
   host="$(basename "$cc" -gcc)"; build="$BUILDROOT_HOME/dropbear-build/$DROPBEAR_VERSION/$arch"; rm -rf "$build"; mkdir -p "$build"
   tar -xjf "$archive" -C "$build" --strip-components=1 || die "could not extract Dropbear source"
-  printf '%s\n' '#define DEFAULT_PATH "/usr/sbin:/usr/bin:/sbin:/bin"' >> "$build/localoptions.h"
+  cat >> "$build/localoptions.h" <<'EOF_DROPBEAR_OPTIONS'
+#define DEFAULT_PATH "/usr/sbin:/usr/bin:/sbin:/bin"
+/* KLab provisions public keys and never needs password authentication. Some
+ * static musl SDKs intentionally omit crypt(3), so exclude the unused backend. */
+#define DROPBEAR_SVR_PASSWORD_AUTH 0
+EOF_DROPBEAR_OPTIONS
   (cd "$build" && CC="$cc" ./configure --host="$host" --disable-zlib --enable-bundled-libtom --disable-lastlog --disable-wtmp --disable-utmp --disable-utmpx --disable-wtmpx --disable-harden --enable-static >configure.log 2>&1 && make -s -j"$JOBS" MULTI=1 SCPPROGRESS=0 PROGRAMS='dropbear dropbearkey' >make.log 2>&1) || die "static Dropbear build failed for $arch; see $build/configure.log and $build/make.log"
   file "$build/dropbearmulti" | grep -Fq 'statically linked' || die "Dropbear fallback for $arch is not static"
   klab_arch_e2e_file_matches "$arch" "$(file "$build/dropbearmulti")" || die "Dropbear fallback does not match $arch"

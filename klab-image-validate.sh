@@ -110,7 +110,8 @@ PY
   check='uname -r; uname -m; printf KLAB_SSH_PASS'; [[ "$provider" == upstream || "$provider" == custom ]] || check="test \"\$(uname -r)\" = '${target##*:}'; uname -m; printf KLAB_SSH_PASS"
   ssh_compat=(-o HostkeyAlgorithms=+ssh-rsa -o PubkeyAcceptedAlgorithms=+ssh-rsa)
   case "$target" in
-   upstream:v2.0.40|upstream:v2.2.26|upstream:v2.6.0) ssh_compat=(-o HostkeyAlgorithms=ssh-rsa -o PubkeyAcceptedAlgorithms=ssh-rsa -o KexAlgorithms=diffie-hellman-group1-sha1 -o Ciphers=aes128-cbc -o MACs=hmac-sha1 -o Compression=no);;
+   upstream:v2.0.40|upstream:v2.2.26) ssh_compat=(-o HostkeyAlgorithms=ssh-rsa -o PubkeyAcceptedAlgorithms=ssh-rsa -o KexAlgorithms=diffie-hellman-group1-sha1 -o Ciphers=aes128-cbc -o MACs=hmac-sha1 -o Compression=no);;
+   upstream:v2.6.0) ssh_compat=(-o HostkeyAlgorithms=+ssh-rsa -o PubkeyAcceptedAlgorithms=+ssh-rsa -o KexAlgorithms=+diffie-hellman-group14-sha1);;
   esac
   run_gate interactive_ssh 120 ssh -i "$key" -p "$port" -o ConnectTimeout=10 -o BatchMode=yes -o IdentitiesOnly=yes -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null "${ssh_compat[@]}" root@127.0.0.1 "$check" || true
  else
